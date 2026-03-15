@@ -107,7 +107,7 @@ export function registerPluginHooks(api: HookApi, container: PluginContainer): v
     });
 
     api.logger.info(
-      `[openclaw-memory-plugin] session=${sessionId} wrote=${result.written} memories, stateTask=${result.state.currentTask ?? "none"}`,
+      `[openclaw-recall] session=${sessionId} wrote=${result.written} memories, stateTask=${result.state.currentTask ?? "none"}`,
     );
   });
 

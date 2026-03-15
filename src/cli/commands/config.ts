@@ -25,7 +25,7 @@ export function registerConfigCommands(program: Command): void {
           printOutput(this, {
             plugins: {
               entries: {
-                "openclaw-memory-plugin": entry,
+                "openclaw-recall": entry,
               },
             },
           });
@@ -38,7 +38,7 @@ export function registerConfigCommands(program: Command): void {
             ...((loaded.openclawConfig.plugins ?? {}) as Record<string, unknown>),
             entries: {
               ...((((loaded.openclawConfig.plugins ?? {}) as Record<string, unknown>).entries ?? {}) as Record<string, unknown>),
-              "openclaw-memory-plugin": entry,
+              "openclaw-recall": entry,
             },
           },
         };
@@ -47,7 +47,7 @@ export function registerConfigCommands(program: Command): void {
         printOutput(this, {
           ok: true,
           wrote: loaded.configPath,
-          entry: "plugins.entries.openclaw-memory-plugin",
+          entry: "plugins.entries.openclaw-recall",
         });
       }),
   );
@@ -77,16 +77,16 @@ export function registerConfigCommands(program: Command): void {
           field: "openclaw.json",
           severity: "warn",
           message: "OpenClaw config does not exist yet.",
-          repairHint: "Run `openclaw plugins install --link /path/to/openclaw-memory-plugin` first.",
+          repairHint: "Run `openclaw plugins install --link /path/to/openclaw-recall` first.",
         });
       }
 
       if (!loaded.enabled) {
         issues.push({
-          field: "plugins.entries.openclaw-memory-plugin.enabled",
+          field: "plugins.entries.openclaw-recall.enabled",
           severity: "warn",
           message: "Plugin entry is disabled.",
-          repairHint: "Run `openclaw plugins enable openclaw-memory-plugin`.",
+          repairHint: "Run `openclaw plugins enable openclaw-recall`.",
         });
       }
 
@@ -98,7 +98,7 @@ export function registerConfigCommands(program: Command): void {
           field: "embedding.apiKey",
           severity: "error",
           message: "OpenAI-compatible embeddings were selected but no API key was found.",
-          repairHint: "Set OPENCLAW_MEMORY_PLUGIN_EMBEDDING_API_KEY or plugins.entries.openclaw-memory-plugin.config.embedding.apiKey.",
+          repairHint: "Set OPENCLAW_RECALL_EMBEDDING_API_KEY or plugins.entries.openclaw-recall.config.embedding.apiKey.",
         });
       }
 
@@ -107,7 +107,7 @@ export function registerConfigCommands(program: Command): void {
           field: "inspect.httpPath",
           severity: "warn",
           message: "Inspect path does not use the standard /plugins/ prefix.",
-          repairHint: "Use /plugins/openclaw-memory-plugin or another plugin-prefixed route.",
+          repairHint: "Use /plugins/openclaw-recall or another plugin-prefixed route.",
         });
       }
 

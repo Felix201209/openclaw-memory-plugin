@@ -35,7 +35,7 @@ await fs.writeFile(
     "",
     "This README is intentionally long so tool output compaction has visible savings.",
     "",
-    "OpenClaw Memory Plugin should remember user preferences, compress old context, compact tool output, and record profiles.",
+    "OpenClaw Recall should remember user preferences, compress old context, compact tool output, and record profiles.",
     "The smoke test reads this file so the plugin stores a compact summary instead of replaying raw content.",
     "Repeated concepts: memory recall, context budgeting, tool compaction, profile inspection, session continuity.",
   ].join("\n"),
@@ -44,7 +44,7 @@ await fs.writeFile(
 await fs.writeFile(path.join(agentDir, "AGENTS.md"), "# Agent\nUse concise Chinese replies.\n", "utf8");
 
 runOpenClaw(["plugins", "install", "--link", repoRoot], openclawHome);
-runOpenClaw(["plugins", "info", "openclaw-memory-plugin"], openclawHome);
+runOpenClaw(["plugins", "info", "openclaw-recall"], openclawHome);
 
 process.env.OPENCLAW_HOME = openclawHome;
 process.env.OPENCLAW_RUNNER_LOG = "0";
@@ -153,14 +153,14 @@ function withModelConfig(installedConfig: Record<string, unknown>): Record<strin
     ...installedConfig,
     plugins: {
       ...plugins,
-      allow: ["openclaw-memory-plugin"],
+      allow: ["openclaw-recall"],
     },
     models: {
       providers: {
         openai: {
           baseUrl: "https://api.openai.com/v1",
           api: "openai-responses",
-          apiKey: "sk-openclaw-memory-plugin-mock",
+          apiKey: "sk-openclaw-recall-mock",
           models: [
             {
               id: "gpt-4.1-mini",

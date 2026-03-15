@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.0
+
+- renamed the plugin to `OpenClaw Recall`
+- renamed the npm package and operator CLI to `openclaw-recall`
+- updated manifest, docs, inspect paths, config keys, and release metadata for the stable name
+- verified the stable release chain: build, unit, integration, smoke, verify, tarball sanity, tarball install, and publish dry-run
+- prepared the stable `v1.0.0` GitHub release and npm package
+
 ## 0.3.0-beta.1
 
 - cut the first beta release line for the plugin

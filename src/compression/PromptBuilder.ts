@@ -62,7 +62,7 @@ export class PromptBuilder {
         minTokens: 72,
         neverTrim: true,
         content:
-          "You are running with the OpenClaw Memory Plugin. Prefer current task state, ranked memory, compacted tool output, and compressed history over full transcript replay.",
+          "You are running with OpenClaw Recall. Prefer current task state, ranked memory, compacted tool output, and compressed history over full transcript replay.",
       },
       {
         name: "TASK STATE",

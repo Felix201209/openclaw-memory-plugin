@@ -20,8 +20,8 @@ The plugin currently attaches to these OpenClaw lifecycle hooks:
 
 Implementation entry:
 
-- [`src/plugin/index.ts`](/Users/felix/Documents/openclaw-memory-plugin/src/plugin/index.ts)
-- [`src/plugin/hooks.ts`](/Users/felix/Documents/openclaw-memory-plugin/src/plugin/hooks.ts)
+- [`src/plugin/index.ts`](./src/plugin/index.ts)
+- [`src/plugin/hooks.ts`](./src/plugin/hooks.ts)
 
 ## Memory pipeline
 
@@ -39,11 +39,11 @@ run starts
 
 Core modules:
 
-- [`src/memory/MemoryExtractor.ts`](/Users/felix/Documents/openclaw-memory-plugin/src/memory/MemoryExtractor.ts)
-- [`src/memory/MemoryStore.ts`](/Users/felix/Documents/openclaw-memory-plugin/src/memory/MemoryStore.ts)
-- [`src/memory/MemoryRetriever.ts`](/Users/felix/Documents/openclaw-memory-plugin/src/memory/MemoryRetriever.ts)
-- [`src/memory/MemoryRanker.ts`](/Users/felix/Documents/openclaw-memory-plugin/src/memory/MemoryRanker.ts)
-- [`src/memory/SessionStateStore.ts`](/Users/felix/Documents/openclaw-memory-plugin/src/memory/SessionStateStore.ts)
+- [`src/memory/MemoryExtractor.ts`](./src/memory/MemoryExtractor.ts)
+- [`src/memory/MemoryStore.ts`](./src/memory/MemoryStore.ts)
+- [`src/memory/MemoryRetriever.ts`](./src/memory/MemoryRetriever.ts)
+- [`src/memory/MemoryRanker.ts`](./src/memory/MemoryRanker.ts)
+- [`src/memory/SessionStateStore.ts`](./src/memory/SessionStateStore.ts)
 
 ### Default memory rules
 
@@ -66,11 +66,11 @@ before_prompt_build
 
 Core modules:
 
-- [`src/compression/ContextCompressor.ts`](/Users/felix/Documents/openclaw-memory-plugin/src/compression/ContextCompressor.ts)
-- [`src/compression/PromptBuilder.ts`](/Users/felix/Documents/openclaw-memory-plugin/src/compression/PromptBuilder.ts)
-- [`src/compression/BudgetManager.ts`](/Users/felix/Documents/openclaw-memory-plugin/src/compression/BudgetManager.ts)
-- [`src/compression/ToolOutputCompactor.ts`](/Users/felix/Documents/openclaw-memory-plugin/src/compression/ToolOutputCompactor.ts)
-- [`src/compression/ToolOutputStore.ts`](/Users/felix/Documents/openclaw-memory-plugin/src/compression/ToolOutputStore.ts)
+- [`src/compression/ContextCompressor.ts`](./src/compression/ContextCompressor.ts)
+- [`src/compression/PromptBuilder.ts`](./src/compression/PromptBuilder.ts)
+- [`src/compression/BudgetManager.ts`](./src/compression/BudgetManager.ts)
+- [`src/compression/ToolOutputCompactor.ts`](./src/compression/ToolOutputCompactor.ts)
+- [`src/compression/ToolOutputStore.ts`](./src/compression/ToolOutputStore.ts)
 
 Prompt layer order is fixed:
 
@@ -99,8 +99,8 @@ Each completed run records:
 
 Core modules:
 
-- [`src/profiling/TurnProfileStore.ts`](/Users/felix/Documents/openclaw-memory-plugin/src/profiling/TurnProfileStore.ts)
-- [`src/profiling/EventStore.ts`](/Users/felix/Documents/openclaw-memory-plugin/src/profiling/EventStore.ts)
+- [`src/profiling/TurnProfileStore.ts`](./src/profiling/TurnProfileStore.ts)
+- [`src/profiling/EventStore.ts`](./src/profiling/EventStore.ts)
 
 ## Storage model
 
@@ -116,7 +116,7 @@ SQLite tables:
 
 Storage bootstrap:
 
-- [`src/storage/PluginDatabase.ts`](/Users/felix/Documents/openclaw-memory-plugin/src/storage/PluginDatabase.ts)
+- [`src/storage/PluginDatabase.ts`](./src/storage/PluginDatabase.ts)
 
 ## Inspect surface
 
@@ -130,8 +130,8 @@ The plugin registers an authenticated HTTP route inside OpenClaw:
 
 Implementation:
 
-- [`src/inspect/http.ts`](/Users/felix/Documents/openclaw-memory-plugin/src/inspect/http.ts)
-- [`src/inspect/dashboard.ts`](/Users/felix/Documents/openclaw-memory-plugin/src/inspect/dashboard.ts)
+- [`src/inspect/http.ts`](./src/inspect/http.ts)
+- [`src/inspect/dashboard.ts`](./src/inspect/dashboard.ts)
 
 ## Operator CLI
 
@@ -145,7 +145,7 @@ The plugin ships a standalone operator CLI, not a replacement for `openclaw`:
 
 Implementation:
 
-- [`src/cli/index.ts`](/Users/felix/Documents/openclaw-memory-plugin/src/cli/index.ts)
+- [`src/cli/index.ts`](./src/cli/index.ts)
 
 ## Non-goals
 

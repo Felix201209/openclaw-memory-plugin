@@ -7,7 +7,7 @@ export function resolvePluginPaths(env: NodeJS.ProcessEnv = process.env): {
   databasePath: string;
 } {
   const openclawHome = resolveOpenClawHome(env);
-  const pluginRoot = path.join(openclawHome, "plugins", "openclaw-memory-plugin");
+  const pluginRoot = path.join(openclawHome, "plugins", "openclaw-recall");
   return {
     openclawHome,
     pluginRoot,

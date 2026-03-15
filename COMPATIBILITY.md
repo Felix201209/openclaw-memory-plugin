@@ -2,7 +2,7 @@
 
 ## Release target
 
-This matrix applies to `0.3.0-beta.1`.
+This matrix applies to `1.0.0`.
 
 ## Verified versions
 
@@ -10,7 +10,6 @@ This matrix applies to `0.3.0-beta.1`.
 
 - verified: `2026.3.13`
 - compatibility target: `>=2026.3.13`
-- peer dependency declared in [`package.json`](/Users/felix/Documents/openclaw-memory-plugin/package.json)
 
 ### Node.js
 
@@ -22,45 +21,46 @@ This matrix applies to `0.3.0-beta.1`.
 ### Fully smoke-tested
 
 - `openai-responses`
-  - prompt token usage can be `exact` when OpenClaw/provider usage metadata is available
+  - prompt token usage can be `exact` when OpenClaw or the provider returns usage metadata
   - verified in embedded integration, source install, and tarball install flows
 
-### Supported but not fully smoke-tested in this beta
+### Supported but not fully smoke-tested in 1.0.0
 
 - OpenAI-compatible embeddings via `embedding.provider=openai`
   - configuration is supported
   - automated smoke currently covers local hashed embeddings by default instead
 
-### Not yet beta-verified
+### Not yet 1.0.0-verified
 
 - non-OpenAI runtime provider paths
-  - no claim of parity or full smoke coverage in this beta
+  - no claim of full smoke coverage in 1.0.0
 
 ## Verified install paths
 
 - source checkout + `openclaw plugins install --link .`
-- release tarball install into a fresh consumer directory
-- standalone CLI execution from built `dist/`
+- installed package + `openclaw plugins install --link ./node_modules/openclaw-recall`
+- generated tarball install into a fresh consumer directory
+- standalone CLI execution from `dist/`
 - standalone CLI execution from installed package bin
 
 ## Known unstable or limited areas
 
 - `compressionSavings` and `toolTokensSaved` are still `estimated`
-  - workaround: rely on source fields in profile output and treat savings as directional, not exact
+  - workaround: treat savings as directional, not exact
 - provider smoke coverage is uneven
   - workaround: prefer the verified OpenAI Responses path for first deployment
 - plugin CLI exposure through `openclaw <subcommand>` is not reliable upstream
-  - workaround: use the standalone `openclaw-memory-plugin` binary
+  - workaround: use the standalone `openclaw-recall` binary
 - OpenClaw may emit `plugins.allow is empty` warning noise in some install/info flows
   - workaround: set explicit `plugins.allow` in OpenClaw config
 - memory conflict resolution is still rule-based
-  - workaround: inspect memory rows with `memory explain` / `memory inspect` when tuning behavior
+  - workaround: inspect memory rows with `memory explain` and `memory inspect` when tuning behavior
 
-## Evidence used for this beta
+## Evidence used for 1.0.0
 
 - `npm run build`
 - `npm run test:unit`
 - `npm run test:integration`
 - `npm run smoke`
 - `npm run verify`
-- tarball sanity and install-from-tarball smoke included in `verify`
+- `npm publish --dry-run`

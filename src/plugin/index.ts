@@ -6,10 +6,10 @@ import { registerPluginHooks } from "./hooks.js";
 import { getOrCreatePluginContainer } from "./runtime-state.js";
 
 const plugin = {
-  id: "openclaw-memory-plugin",
-  name: "OpenClaw Memory Plugin",
+  id: "openclaw-recall",
+  name: "OpenClaw Recall",
   description:
-    "Automatic memory writes, cross-session retrieval, context compression, tool compaction, and prompt profiling.",
+    "Persistent memory, context compression, and profile visibility for OpenClaw.",
   configSchema: runtimePluginConfigSchema,
   register(api: OpenClawPluginApi) {
     const stateDir = api.runtime.state.resolveStateDir();
@@ -23,10 +23,10 @@ const plugin = {
     });
 
     api.registerService({
-      id: "openclaw-memory-plugin",
+      id: "openclaw-recall",
       start: () => {
         api.logger.info(
-          `[openclaw-memory-plugin] ready: db=${container.database.path} route=${resolved.inspect.httpPath}`,
+          `[openclaw-recall] ready: db=${container.database.path} route=${resolved.inspect.httpPath}`,
         );
       },
     });
@@ -52,7 +52,7 @@ const plugin = {
             import("../cli/commands/status.js"),
             import("../cli/commands/session.js"),
           ]);
-        const sub = program.command("memoryplus").description("Inspect the OpenClaw Memory Plugin");
+        const sub = program.command("recall").description("Inspect OpenClaw Recall");
         registerStatusCommands(sub);
         registerDoctorCommands(sub);
         registerMemoryCommands(sub);
@@ -60,7 +60,7 @@ const plugin = {
         registerSessionCommands(sub);
         registerConfigCommands(sub);
       },
-      { commands: ["memoryplus"] },
+      { commands: ["recall"] },
     );
 
     registerPluginHooks(api, container);

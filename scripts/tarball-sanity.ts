@@ -53,7 +53,7 @@ const packageJson = JSON.parse(
   }),
 ) as { name?: string; version?: string; files?: string[] };
 
-assert.equal(packageJson.name, "openclaw-memory-plugin");
+assert.equal(packageJson.name, "openclaw-recall");
 assert.ok(typeof packageJson.version === "string" && packageJson.version.length > 0);
 
 process.stdout.write(

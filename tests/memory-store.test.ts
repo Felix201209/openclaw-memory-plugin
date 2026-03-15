@@ -41,7 +41,7 @@ const embeddingProvider = createEmbeddingProvider({
     storeDetails: true,
   },
   inspect: {
-    httpPath: "/plugins/openclaw-memory-plugin",
+    httpPath: "/plugins/openclaw-recall",
   },
 });
 

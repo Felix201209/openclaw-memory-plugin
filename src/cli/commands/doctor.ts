@@ -26,8 +26,8 @@ export function registerDoctorCommands(program: Command): void {
         fs.existsSync(path.join(packageRoot, "dist", "src", "plugin", "index.js")) &&
         fs.existsSync(path.join(packageRoot, "dist", "src", "cli", "index.js"));
       const manifestValid =
-        packageJson?.name === "openclaw-memory-plugin" &&
-        pluginManifest?.id === "openclaw-memory-plugin" &&
+        packageJson?.name === "openclaw-recall" &&
+        pluginManifest?.id === "openclaw-recall" &&
         typeof packageJson?.version === "string" &&
         packageJson.version === pluginManifest?.version;
       const writable = await isWritable(path.dirname(container.database.path));
@@ -68,7 +68,7 @@ export function registerDoctorCommands(program: Command): void {
             name: "plugin enabled",
             status: enabled ? "pass" : "warn",
             detail: enabled
-              ? "plugins.entries.openclaw-memory-plugin.enabled is active or defaults to true"
+              ? "plugins.entries.openclaw-recall.enabled is active or defaults to true"
               : "Plugin entry is disabled in OpenClaw config",
           },
           {

@@ -6,6 +6,9 @@ import { listPluginEnvOverrides, resolvePluginConfig, resolveOpenClawHome } from
 import type { OpenClawMemoryPluginConfig, ResolvedPluginConfig } from "../config/schema.js";
 import { getOrCreatePluginContainer, type PluginLogger } from "../plugin/runtime-state.js";
 
+const PRIMARY_PLUGIN_ID = "openclaw-recall";
+const LEGACY_PLUGIN_ID = "openclaw-memory-plugin";
+
 export async function loadOpenClawPluginConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<{
@@ -22,7 +25,8 @@ export async function loadOpenClawPluginConfig(
   const raw = await readConfig(configPath);
   const plugins = (raw.plugins ?? {}) as Record<string, unknown>;
   const entries = (plugins.entries ?? {}) as Record<string, unknown>;
-  const pluginEntry = entries["openclaw-memory-plugin"] as Record<string, unknown> | undefined;
+  const pluginEntry = (entries[PRIMARY_PLUGIN_ID] ??
+    entries[LEGACY_PLUGIN_ID]) as Record<string, unknown> | undefined;
   const pluginConfig = pluginEntry?.config as OpenClawMemoryPluginConfig | undefined;
   const enabled = pluginEntry?.enabled !== false;
   const resolved = resolvePluginConfig({
@@ -66,7 +70,7 @@ export function pluginConfigSources(env: NodeJS.ProcessEnv = process.env): strin
   const envOverrides = listPluginEnvOverrides(env);
   return [
     ...envOverrides,
-    "plugins.entries.openclaw-memory-plugin.config",
+    "plugins.entries.openclaw-recall.config",
     "defaults",
   ];
 }

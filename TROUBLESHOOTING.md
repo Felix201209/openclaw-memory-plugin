@@ -1,6 +1,6 @@
 # Troubleshooting
 
-## `Plugin not found: openclaw-memory-plugin`
+## `Plugin not found: openclaw-recall`
 
 Cause:
 
@@ -12,20 +12,20 @@ Check:
 ```bash
 openclaw config file
 openclaw plugins list
-openclaw plugins info openclaw-memory-plugin
+openclaw plugins info openclaw-recall
 ```
 
 Fix:
 
 ```bash
-openclaw plugins install --link /path/to/openclaw-memory-plugin
+openclaw plugins install --link /path/to/openclaw-recall
 ```
 
 If you are testing a release tarball instead of a source checkout:
 
 ```bash
-npm install ./openclaw-memory-plugin-<version>.tgz
-openclaw plugins install --link ./node_modules/openclaw-memory-plugin
+npm install ./openclaw-recall-<version>.tgz
+openclaw plugins install --link ./node_modules/openclaw-recall
 ```
 
 ## `doctor` says no recent hook activity
@@ -38,28 +38,28 @@ Cause:
 Check:
 
 ```bash
-openclaw-memory-plugin status
-openclaw-memory-plugin config show
+openclaw-recall status
+openclaw-recall config show
 ```
 
 Fix:
 
 - run a short conversation through OpenClaw
-- verify `plugins.entries.openclaw-memory-plugin.enabled` is not `false`
+- verify `plugins.entries.openclaw-recall.enabled` is not `false`
 
 ## No memories are being written
 
 Likely causes:
 
-- `OPENCLAW_MEMORY_PLUGIN_AUTO_WRITE=false`
+- `OPENCLAW_RECALL_AUTO_WRITE=false`
 - messages are not passing the write threshold
 - you only ran recall questions, not stable preference/fact turns
 
 Check:
 
 ```bash
-openclaw-memory-plugin memory list
-openclaw-memory-plugin profile list
+openclaw-recall memory list
+openclaw-recall profile list
 ```
 
 Try a clearer seed turn:
@@ -71,15 +71,15 @@ Try a clearer seed turn:
 If you intentionally disabled auto-write, re-enable it:
 
 ```bash
-unset OPENCLAW_MEMORY_PLUGIN_AUTO_WRITE
+unset OPENCLAW_RECALL_AUTO_WRITE
 ```
 
 ## OpenAI-compatible embeddings selected but no key found
 
 Fix one of:
 
-- switch back to `OPENCLAW_MEMORY_PLUGIN_EMBEDDING_PROVIDER=local`
-- or provide `OPENCLAW_MEMORY_PLUGIN_EMBEDDING_API_KEY`
+- switch back to `OPENCLAW_RECALL_EMBEDDING_PROVIDER=local`
+- or provide `OPENCLAW_RECALL_EMBEDDING_API_KEY`
 
 ## Why do some savings fields still say `estimated`?
 
@@ -88,7 +88,7 @@ Cause:
 - prompt token counts can be exact when provider usage is returned
 - savings values still come from heuristic before/after comparisons
 
-This is expected in the beta.
+This is expected in 1.0.0.
 
 ## SQLite appears locked
 
@@ -103,7 +103,7 @@ The plugin uses `busy_timeout` and WAL when available, so brief contention shoul
 Check:
 
 ```bash
-openclaw-memory-plugin config show
+openclaw-recall config show
 ```
 
 Confirm `inspect.httpPath` starts with `/plugins/` and that OpenClaw loaded the plugin.
@@ -112,7 +112,7 @@ Confirm `inspect.httpPath` starts with `/plugins/` and that OpenClaw loaded the 
 
 Cause:
 
-- one or more `OPENCLAW_MEMORY_PLUGIN_*` variables override `openclaw.json`
+- one or more `OPENCLAW_RECALL_*` variables override `openclaw.json`
 
 Fix:
 
@@ -122,7 +122,7 @@ Fix:
 Use:
 
 ```bash
-openclaw-memory-plugin config show
+openclaw-recall config show
 ```
 
 to confirm the resolved precedence chain.
@@ -132,7 +132,7 @@ to confirm the resolved precedence chain.
 Delete:
 
 ```text
-$OPENCLAW_HOME/.openclaw/plugins/openclaw-memory-plugin/
+$OPENCLAW_HOME/.openclaw/plugins/openclaw-recall/
 ```
 
-This only clears plugin-managed memory/profile/tool state.
+This only clears plugin-managed memory, profile, and tool state.

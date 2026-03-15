@@ -1,8 +1,6 @@
 # Examples
 
-## 5-minute walkthrough
-
-### 1. Teach a stable preference
+## Minimal memory demo
 
 User message:
 
@@ -10,25 +8,24 @@ User message:
 以后默认叫我 Felix，用中文回答，并且尽量简洁。
 ```
 
-Expected plugin behavior:
+Expected result:
 
-- writes `preference` memory rows
-- stores no full replay requirement for later sessions
+- OpenClaw Recall writes `preference` memory rows
+- later sessions no longer need the full original transcript to recover the preference
 
-### 2. Start a new session and ask for recall
+## Cross-session recall demo
 
-User message:
+Start a new session and ask:
 
 ```text
 你记得我的偏好吗？
 ```
 
-Expected behavior:
+Expected result:
 
-- plugin retrieves prior preference memories
-- prompt build injects `RELEVANT MEMORY`
-- assistant can answer without full transcript replay
-- resulting profile should show `promptTokensSource: "exact"` on provider paths that return usage
+- relevant memories are retrieved before prompt build
+- the assistant recalls `Felix`, `中文`, and `简洁`
+- profile output shows retrieval evidence
 
 Example output from the repository demo:
 
@@ -36,7 +33,7 @@ Example output from the repository demo:
 我记得：• [preference] User prefers to be addressed as Felix，用中文回答，并且尽量简洁。. (score=18.34; importance=9.2; why=high-value memory type, high confidence for "你记得我的偏好吗？".)
 ```
 
-### 3. Trigger a large tool payload
+## Tool compaction demo
 
 User message:
 
@@ -44,32 +41,25 @@ User message:
 read "README.md"
 ```
 
-Expected behavior:
+Expected result:
 
-- raw payload is compacted
-- profile records `toolTokensSaved`
-- stored tool output remains inspectable
+- raw tool payload is compacted
+- `savedTokens` becomes non-zero
 - `toolTokensSavedSource` remains `estimated`, not fake-exact
 
-Example result excerpt:
-
-```text
-Read complete. # Plugin Smoke Workspace This file exists to exercise OpenClaw tool execution and force compaction savings...
-```
-
-### 4. Inspect what happened
+## Inspect what happened
 
 ```bash
-openclaw-memory-plugin memory list
-openclaw-memory-plugin memory explain "你记得我的偏好吗？"
-openclaw-memory-plugin profile list
-openclaw-memory-plugin session inspect plugin-smoke-3
+openclaw-recall memory list
+openclaw-recall memory explain "你记得我的偏好吗？"
+openclaw-recall profile list
+openclaw-recall session inspect plugin-smoke-3
 ```
 
 Success indicators:
 
-- `memory list` contains preference rows mentioning Felix / Chinese / concise
-- `memory explain` gives a ranked reason for retrieval
+- `memory list` contains preference rows mentioning Felix, Chinese, or concise replies
+- `memory explain` gives ranked retrieval reasons
 - `profile list --json` shows at least one run with `promptTokensSource: "exact"`
 - `session inspect` shows tool results with `savedTokens > 0`
 
@@ -90,23 +80,3 @@ Success indicators:
   }
 }
 ```
-
-## Sample doctor signals
-
-Healthy plugin:
-
-- plugin enabled
-- database path exists and is writable
-- embedding provider available
-- recent hook activity present
-- memory pipeline active
-- retrieval pipeline active
-- compression pipeline active
-
-Uninitialized plugin:
-
-- no recent profile data yet
-- no memories stored yet
-- no compacted tool outputs yet
-
-That state is normal before the first real conversation.

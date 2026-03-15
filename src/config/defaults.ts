@@ -1,5 +1,5 @@
-export const DEFAULT_PLUGIN_ID = "openclaw-memory-plugin";
-export const DEFAULT_HTTP_PATH = "/plugins/openclaw-memory-plugin";
+export const DEFAULT_PLUGIN_ID = "openclaw-recall";
+export const DEFAULT_HTTP_PATH = "/plugins/openclaw-recall";
 
 export const defaultPluginConfig = {
   enabled: true,

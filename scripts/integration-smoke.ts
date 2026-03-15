@@ -39,7 +39,7 @@ await fs.writeFile(
     "- compression",
     "",
     "Details:",
-    "OpenClaw Memory Plugin stores structured memory, compressed tool output, and prompt profiles.",
+    "OpenClaw Recall stores structured memory, compressed tool output, and prompt profiles.",
     "The integration smoke test deliberately reads a longer file so the plugin has a meaningful payload to compact.",
     "The file also repeats a few concepts: persistent memory, cross-session retrieval, prompt budgeting, context trimming, and inspectable profiling.",
     "Persistent memory matters because the model otherwise forgets stable user preferences across sessions.",
@@ -157,7 +157,7 @@ function buildConfig(pluginPath: string): Record<string, unknown> {
         openai: {
           baseUrl: "https://api.openai.com/v1",
           api: "openai-responses",
-          apiKey: "sk-openclaw-memory-plugin-mock",
+          apiKey: "sk-openclaw-recall-mock",
           models: [
             {
               id: "gpt-4.1-mini",
@@ -176,9 +176,9 @@ function buildConfig(pluginPath: string): Record<string, unknown> {
     plugins: {
       enabled: true,
       load: { paths: [pluginPath] },
-      allow: ["openclaw-memory-plugin"],
+      allow: ["openclaw-recall"],
       entries: {
-        "openclaw-memory-plugin": {
+        "openclaw-recall": {
           enabled: true,
           hooks: { allowPromptInjection: true },
           config: {},

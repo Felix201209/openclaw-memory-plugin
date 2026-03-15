@@ -10,9 +10,9 @@ import { registerStatusCommands } from "./commands/status.js";
 const program = new Command();
 
 program
-  .name("openclaw-memory-plugin")
-  .description("Inspect and operate the OpenClaw Memory Plugin")
-  .version("0.3.0-beta.1");
+  .name("openclaw-recall")
+  .description("Inspect and operate OpenClaw Recall")
+  .version("1.0.0");
 
 registerStatusCommands(program);
 registerDoctorCommands(program);

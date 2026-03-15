@@ -432,7 +432,7 @@ export class PluginContainer {
   }
 }
 
-const STATE_KEY = Symbol.for("openclaw-memory-plugin.state");
+const STATE_KEY = Symbol.for("openclaw-recall.state");
 
 export function getOrCreatePluginContainer(params: {
   config: ResolvedPluginConfig;

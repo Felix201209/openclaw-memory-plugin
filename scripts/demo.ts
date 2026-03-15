@@ -20,7 +20,7 @@ const payload = JSON.parse(lines.slice(jsonStart).join("\n")) as {
 
 process.stdout.write(
   [
-    "OpenClaw Memory Plugin demo",
+    "OpenClaw Recall demo",
     "",
     "1. User teaches a stable preference:",
     "   以后默认叫我 Felix，用中文回答，并且尽量简洁。",

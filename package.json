@@ -1,12 +1,12 @@
 {
-  "name": "openclaw-memory-plugin",
-  "version": "0.3.0-beta.1",
-  "description": "Production-grade OpenClaw enhancement plugin for persistent memory, context compression, and inspectable profiling.",
+  "name": "openclaw-recall",
+  "version": "1.0.0",
+  "description": "Persistent memory, context compression, and profile visibility for OpenClaw.",
   "type": "module",
   "main": "dist/src/plugin/index.js",
   "types": "dist/src/plugin/index.d.ts",
   "bin": {
-    "openclaw-memory-plugin": "dist/src/cli/index.js"
+    "openclaw-recall": "dist/src/cli/index.js"
   },
   "exports": {
     ".": {
@@ -101,10 +101,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Felix201209/openclaw-memory-plugin.git"
+    "url": "git+https://github.com/Felix201209/openclaw-recall.git"
   },
-  "homepage": "https://github.com/Felix201209/openclaw-memory-plugin",
+  "homepage": "https://github.com/Felix201209/openclaw-recall",
   "bugs": {
-    "url": "https://github.com/Felix201209/openclaw-memory-plugin/issues"
+    "url": "https://github.com/Felix201209/openclaw-recall/issues"
   }
 }

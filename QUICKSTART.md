@@ -1,118 +1,90 @@
 # Quickstart
 
-## Goal
-
-Get the plugin installed, enabled, and verified with the fewest moving parts.
-
-This document tracks the beta release path for `0.3.0-beta.1`.
+Install OpenClaw Recall, prove the hooks are active, and verify memory, recall, compression, and profile output with the fewest moving parts.
 
 ## Prerequisites
 
 - Node.js 24+
 - OpenClaw installed and working
-- local shell access to the machine that runs OpenClaw
+- shell access on the machine that runs OpenClaw
 
-## Fast path
+## Fast path from npm
 
 ```bash
-git clone https://github.com/Felix201209/openclaw-memory-plugin.git
-cd openclaw-memory-plugin
+npm install openclaw-recall
+openclaw plugins install --link ./node_modules/openclaw-recall
+openclaw plugins info openclaw-recall
+openclaw-recall doctor
+openclaw-recall status
+```
+
+## Fast path from source
+
+```bash
+git clone https://github.com/Felix201209/openclaw-recall.git
+cd openclaw-recall
 npm install
 npm run build
 openclaw plugins install --link .
-openclaw plugins info openclaw-memory-plugin
-openclaw-memory-plugin doctor
-openclaw-memory-plugin status
-npm run demo
+openclaw plugins info openclaw-recall
+openclaw-recall doctor
+openclaw-recall status
 ```
 
-## What each step does
-
-1. `npm install`
-   installs plugin dependencies and a local OpenClaw dev dependency for validation.
-2. `npm run build`
-   produces the plugin entrypoint and standalone CLI in `dist/`.
-3. `openclaw plugins install --link .`
-   registers the plugin path in your active `openclaw.json`.
-4. `openclaw plugins info openclaw-memory-plugin`
-   confirms OpenClaw can discover and load it.
-5. `openclaw-memory-plugin doctor`
-   checks config, storage, embeddings, inspect path, and recent runtime evidence.
-6. `openclaw-memory-plugin status`
-   shows current memory/profile/session counts and latest run activity.
-7. `npm run demo`
-   proves automatic memory write, cross-session recall, tool compaction, and profile capture.
-
-## Optional: write a starter config entry
-
-Print a starter entry:
+## Optional starter config
 
 ```bash
-openclaw-memory-plugin config init
+openclaw-recall config init
+openclaw-recall config init --write-openclaw
+openclaw-recall config validate
 ```
 
-Merge the starter entry into the active `openclaw.json`:
+## Common environment overrides
+
+Start from [`.env.example`](./.env.example).
 
 ```bash
-openclaw-memory-plugin config init --write-openclaw
+OPENCLAW_RECALL_EMBEDDING_PROVIDER=local
+OPENCLAW_RECALL_CONTEXT_BUDGET=2400
+OPENCLAW_RECALL_RECENT_TURNS=6
+OPENCLAW_RECALL_HTTP_PATH=/plugins/openclaw-recall
 ```
 
-## Environment overrides
-
-Start from [`.env.example`](/Users/felix/Documents/openclaw-memory-plugin/.env.example).
-
-Most users can stay with defaults. The most common overrides are:
-
-```bash
-OPENCLAW_MEMORY_PLUGIN_EMBEDDING_PROVIDER=local
-OPENCLAW_MEMORY_PLUGIN_CONTEXT_BUDGET=2400
-OPENCLAW_MEMORY_PLUGIN_RECENT_TURNS=6
-OPENCLAW_MEMORY_PLUGIN_HTTP_PATH=/plugins/openclaw-memory-plugin
-```
-
-## Verify hooks with a short demo
+## First proof run
 
 ```bash
 npm run demo
 ```
 
-That shows:
+That demonstrates:
 
 - automatic memory write
 - cross-session recall
 - tool compaction
 - profile recording
 
-## Full smoke validation
+## Full smoke path
 
 ```bash
 npm run smoke
 ```
 
-This runs:
-
-- type-check
-- build
-- unit tests
-- embedded integration test
-- install-path integration test
-
-## Release-grade validation
+## Release-grade validation path
 
 ```bash
 npm run verify
 ```
 
-This additionally checks:
+That additionally checks:
 
-- tarball contents are clean
-- install-from-tarball works in a fresh consumer directory
-- the installed package can be linked into OpenClaw
-- the installed CLI can run doctor/status/session inspect
+- tarball contents
+- install from generated tarball
+- OpenClaw plugin load from installed package path
+- installed CLI execution for doctor/status/session inspect
 
 ## What success looks like
 
-- `openclaw plugins info openclaw-memory-plugin` shows `Status: loaded`
-- `openclaw-memory-plugin doctor` has no `fail` checks
-- `openclaw-memory-plugin status` shows non-zero `memoryCount` and `profileCount` after the demo
-- `openclaw-memory-plugin profile list --json` shows `promptTokensSource: "exact"` on provider paths that return usage
+- `openclaw plugins info openclaw-recall` shows `Status: loaded`
+- `openclaw-recall doctor` has no `fail` checks
+- `openclaw-recall status` shows non-zero `memoryCount` and `profileCount` after a demo run
+- `openclaw-recall profile list --json` shows `promptTokensSource: "exact"` on provider paths that return usage

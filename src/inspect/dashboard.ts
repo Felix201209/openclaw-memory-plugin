@@ -33,7 +33,7 @@ export function renderDashboard(params: {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>OpenClaw Memory Plugin</title>
+  <title>OpenClaw Recall</title>
   <style>
     :root { color-scheme: light; --bg:#f3efe8; --ink:#1c1a17; --muted:#6a655d; --line:#d7cec2; --card:#fffaf3; --accent:#0e7a66; }
     body { margin:0; font-family: "Iowan Old Style", "Palatino Linotype", serif; background: radial-gradient(circle at top, #fff8ef, var(--bg)); color:var(--ink); }
@@ -51,8 +51,8 @@ export function renderDashboard(params: {
 </head>
 <body>
   <main>
-    <h1>OpenClaw Memory Plugin</h1>
-    <p>Automatic memory writes, context compression, tool compaction, and prompt profiling for OpenClaw.</p>
+    <h1>OpenClaw Recall</h1>
+    <p>Persistent memory, context compression, tool compaction, and prompt visibility for OpenClaw.</p>
     <div class="links">
       <a href="${params.basePath}/status">status</a>
       <a href="${params.basePath}/memories">memories</a>

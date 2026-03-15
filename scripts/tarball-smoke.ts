@@ -46,9 +46,9 @@ await fs.writeFile(path.join(agentDir, "AGENTS.md"), "# Agent\nUse concise Chine
 exec("npm", ["init", "-y"], consumerDir);
 exec("npm", ["install", tarballPath, `openclaw@${openclawVersion}`], consumerDir);
 
-const installedPluginDir = path.join(consumerDir, "node_modules", "openclaw-memory-plugin");
+const installedPluginDir = path.join(consumerDir, "node_modules", "openclaw-recall");
 runOpenClaw(["plugins", "install", "--link", installedPluginDir], openclawHome, consumerDir);
-runOpenClaw(["plugins", "info", "openclaw-memory-plugin"], openclawHome, consumerDir);
+runOpenClaw(["plugins", "info", "openclaw-recall"], openclawHome, consumerDir);
 
 process.env.OPENCLAW_HOME = openclawHome;
 process.env.OPENCLAW_RUNNER_LOG = "0";
@@ -181,7 +181,7 @@ function runOpenClaw(args: string[], home: string, cwd: string): void {
 }
 
 function execInstalledCli(args: string[], cwd: string, home: string): string {
-  return execFileSync(path.join(cwd, "node_modules", ".bin", "openclaw-memory-plugin"), args, {
+  return execFileSync(path.join(cwd, "node_modules", ".bin", "openclaw-recall"), args, {
     cwd,
     encoding: "utf8",
     stdio: "pipe",
@@ -199,14 +199,14 @@ function withModelConfig(installedConfig: Record<string, unknown>): Record<strin
     ...installedConfig,
     plugins: {
       ...plugins,
-      allow: ["openclaw-memory-plugin"],
+      allow: ["openclaw-recall"],
     },
     models: {
       providers: {
         openai: {
           baseUrl: "https://api.openai.com/v1",
           api: "openai-responses",
-          apiKey: "sk-openclaw-memory-plugin-mock",
+          apiKey: "sk-openclaw-recall-mock",
           models: [
             {
               id: "gpt-4.1-mini",

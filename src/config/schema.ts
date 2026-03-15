@@ -161,7 +161,7 @@ export const runtimePluginConfigSchema = {
     },
     "inspect.httpPath": {
       label: "Inspect HTTP Path",
-      help: "Plugin inspect route prefix. Defaults to /plugins/openclaw-memory-plugin.",
+      help: "Plugin inspect route prefix. Defaults to /plugins/openclaw-recall.",
     },
   },
   parse(value: unknown): OpenClawMemoryPluginConfig {

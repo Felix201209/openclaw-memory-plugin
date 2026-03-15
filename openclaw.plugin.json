@@ -1,8 +1,8 @@
 {
-  "id": "openclaw-memory-plugin",
-  "name": "OpenClaw Memory Plugin",
-  "description": "Automatic memory, context compression, tool output compaction, and prompt profiling for OpenClaw.",
-  "version": "0.3.0-beta.1",
+  "id": "openclaw-recall",
+  "name": "OpenClaw Recall",
+  "description": "Persistent memory, context compression, and profile visibility for OpenClaw.",
+  "version": "1.0.0",
   "uiHints": {
     "embedding.provider": {
       "label": "Embedding Provider",
