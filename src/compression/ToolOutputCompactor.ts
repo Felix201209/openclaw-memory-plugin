@@ -1,5 +1,6 @@
 import { estimateTokens, sentenceFromText } from "../shared/text.js";
 import { CompactedToolResult } from "../types/domain.js";
+import { chunkStructuredText, prioritizeStructuredChunks, renderStructuredChunk } from "./StructuralChunking.js";
 
 export class ToolOutputCompactor {
   constructor(private readonly thresholdChars = 600) {}
@@ -30,15 +31,7 @@ export class ToolOutputCompactor {
 
   private renderPayload(toolName: string, payload: unknown): string {
     if (typeof payload === "string") {
-      const lines = payload
-        .split(/\r?\n/)
-        .filter(Boolean)
-        .slice(0, 10)
-        .map((line, index) => `${index + 1}. ${sentenceFromText(line, 160)}`)
-        .join("\n");
-      return [`Tool: ${toolName}`, `Summary: ${sentenceFromText(payload, 180)}`, lines ? `Key facts:\n${lines}` : ""]
-        .filter(Boolean)
-        .join("\n");
+      return this.renderStructuredText(toolName, payload);
     }
 
     if (Array.isArray(payload)) {
@@ -49,9 +42,8 @@ export class ToolOutputCompactor {
           return `${index + 1}. ${sentenceFromText(rendered, 140)}`;
         })
         .join("\n");
-      return [`Tool: ${toolName}`, `Summary: returned ${payload.length} items.`, `Key facts:\n${lines}`]
-        .filter(Boolean)
-        .join("\n");
+      const structured = this.renderStructuredText(toolName, JSON.stringify(payload, null, 2) ?? String(payload));
+      return [structured, lines ? `Items:\n${lines}` : ""].filter(Boolean).join("\n");
     }
 
     if (payload && typeof payload === "object") {
@@ -62,16 +54,19 @@ export class ToolOutputCompactor {
           return `${key}: ${sentenceFromText(rendered, 120)}`;
         })
         .join("\n");
-      return [
-        `Tool: ${toolName}`,
-        `Summary: structured payload with ${Object.keys(payload as Record<string, unknown>).length} fields.`,
-        entries ? `Key facts:\n${entries}` : "",
-      ]
-        .filter(Boolean)
-        .join("\n");
+      const structured = this.renderStructuredText(toolName, JSON.stringify(payload, null, 2) ?? String(payload));
+      return [structured, entries ? `Key facts:\n${entries}` : ""].filter(Boolean).join("\n");
     }
 
     return [`Tool: ${toolName}`, `Summary: ${sentenceFromText(String(payload ?? ""), 240)}`].join("\n");
+  }
+
+  private renderStructuredText(toolName: string, text: string): string {
+    const chunks = prioritizeStructuredChunks(chunkStructuredText(text)).slice(0, 6);
+    const lines = chunks.map((chunk, index) => `${index + 1}. ${renderStructuredChunk(chunk)}`).join("\n");
+    return [`Tool: ${toolName}`, `Summary: ${sentenceFromText(text, 180)}`, lines ? `Key facts:\n${lines}` : ""]
+      .filter(Boolean)
+      .join("\n");
   }
 }
 

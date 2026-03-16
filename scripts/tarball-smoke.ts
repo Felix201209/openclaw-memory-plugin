@@ -46,7 +46,7 @@ await fs.writeFile(path.join(agentDir, "AGENTS.md"), "# Agent\nUse concise Chine
 exec("npm", ["init", "-y"], consumerDir);
 exec("npm", ["install", tarballPath, `openclaw@${openclawVersion}`], consumerDir);
 
-const installedPluginDir = path.join(consumerDir, "node_modules", "@felix201209", "openclaw-recall");
+const installedPluginDir = path.join(consumerDir, "node_modules", "@felixypz", "openclaw-recall");
 runOpenClaw(["plugins", "install", "--link", installedPluginDir], openclawHome, consumerDir);
 runOpenClaw(["plugins", "info", "openclaw-recall"], openclawHome, consumerDir);
 

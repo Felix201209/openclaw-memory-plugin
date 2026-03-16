@@ -146,7 +146,7 @@ async function createConsumer(name: string, endpoint: string) {
 
   exec("npm", ["init", "-y"], consumerDir);
   exec("npm", ["install", tarballPath, `openclaw@${openclawVersion}`], consumerDir);
-  const installedPluginDir = path.join(consumerDir, "node_modules", "@felix201209", "openclaw-recall");
+  const installedPluginDir = path.join(consumerDir, "node_modules", "@felixypz", "openclaw-recall");
   runOpenClaw(["plugins", "install", "--link", installedPluginDir], openclawHome, consumerDir);
   execInstalledCli(
     [

@@ -16,3 +16,24 @@ test("compresses large tool payloads and reports token savings", () => {
   assert.match(result.compacted, /Tool: read/);
   assert.ok((result.savedTokens ?? 0) > 0);
 });
+
+test("preserves structural clues like commands, code, and error stacks in compacted output", () => {
+  const compactor = new ToolOutputCompactor(40);
+  const payload = [
+    "$ npm run build",
+    "",
+    "Error: build failed",
+    "    at compile (src/build.ts:10:2)",
+    "    at main (src/index.ts:5:1)",
+    "",
+    "```ts",
+    "export function build() {",
+    "  return compileProject();",
+    "}",
+    "```",
+  ].join("\n");
+  const result = compactor.compact("run", payload);
+  assert.match(result.compacted, /Command:/);
+  assert.match(result.compacted, /Error:/);
+  assert.match(result.compacted, /Code:/);
+});

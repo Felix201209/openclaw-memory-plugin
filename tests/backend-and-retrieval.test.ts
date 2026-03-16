@@ -481,3 +481,59 @@ test("recall-style queries prioritize stable preferences and current project con
     await cleanupTempDir(tempDir);
   }
 });
+
+test("retrieval diversifies near-duplicate preferences with current project context", async () => {
+  const tempDir = await createTempDir("openclaw-recall-diversity-");
+  try {
+    const config = buildConfig({
+      storageDir: tempDir,
+      databasePath: path.join(tempDir, "memory.sqlite"),
+      retrieval: {
+        mode: "hybrid",
+        fallbackToKeyword: true,
+      },
+    });
+    const store = new MemoryStore(
+      new PluginDatabase(config.databasePath),
+      createEmbeddingProvider(config),
+      0.92,
+      config,
+    );
+    await store.upsertMany([
+      buildMemory("User prefers concise Chinese replies.", {
+        kind: "preference",
+        scope: "private",
+        scopeKey: "user:default",
+        memoryGroup: "preference:language-style",
+        topics: ["concise", "chinese", "replies"],
+        importance: 9.4,
+      }),
+      buildMemory("User prefers concise execution-oriented updates in Chinese.", {
+        kind: "preference",
+        scope: "private",
+        scopeKey: "user:default",
+        topics: ["concise", "execution", "chinese", "updates"],
+        importance: 9.2,
+      }),
+      buildMemory("Project focus is backend, scope, and import quality.", {
+        kind: "semantic",
+        scope: "workspace",
+        scopeKey: "workspace:default",
+        memoryGroup: "semantic:project",
+        topics: ["backend", "scope", "import", "quality"],
+        importance: 8.8,
+      }),
+    ]);
+
+    const retriever = new MemoryRetriever(store, new MemoryRanker(), createEmbeddingProvider(config), 4, config);
+    const result = await retriever.retrieveWithContext("你记得我的偏好和当前项目重点吗？", 2, {
+      sessionId: "s1",
+    });
+
+    assert.equal(result.memories.length, 2);
+    assert.equal(result.memories.some((memory) => memory.kind === "preference"), true);
+    assert.equal(result.memories.some((memory) => memory.kind === "semantic"), true);
+  } finally {
+    await cleanupTempDir(tempDir);
+  }
+});

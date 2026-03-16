@@ -26,6 +26,7 @@ import type {
 } from "../types/domain.js";
 import type { ResolvedPluginConfig } from "../config/schema.js";
 import { sanitizeIncomingUserText, sanitizeTurnForStorage } from "../shared/safety.js";
+import { shouldSkipAutoRetrieval } from "../memory/retrievalGate.js";
 
 export type PluginLogger = {
   debug?: (message: string) => void;
@@ -125,9 +126,16 @@ export class PluginContainer {
 
     const state = await this.stateStore.get(params.sessionId);
     const toolResults = await this.toolOutputStore.listRecent(params.sessionId, 6);
-    const retrieval = await this.memoryRetriever.retrieveWithContext(cleanedPrompt, this.config.memory.topK, {
-      sessionId: params.sessionId,
-    });
+    const retrieval = shouldSkipAutoRetrieval(cleanedPrompt)
+      ? {
+          memories: [],
+          mode: this.memoryRetriever.previewMode(),
+          keywordContribution: 0,
+          semanticContribution: 0,
+        }
+      : await this.memoryRetriever.retrieveWithContext(cleanedPrompt, this.config.memory.topK, {
+          sessionId: params.sessionId,
+        });
     const memories = retrieval.memories;
     const compression = this.contextCompressor.compress(historyMessages, state);
     const promptBuild = this.promptBuilder.build({

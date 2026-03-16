@@ -1,4 +1,4 @@
-import { EmbeddingProvider } from "./EmbeddingProvider.js";
+import { cosineSimilarity, EmbeddingProvider } from "./EmbeddingProvider.js";
 import { MemoryStore } from "./MemoryStore.js";
 import { MemoryRanker } from "./MemoryRanker.js";
 import { MemoryRecord, RetrievalMode } from "../types/domain.js";
@@ -38,7 +38,8 @@ export class MemoryRetriever {
       isMemoryVisible(memory, this.config, options.sessionId),
     );
     const queryEmbedding = usedMode === "keyword" ? [] : await this.embeddings.embed(cleanQuery);
-    const ranked = this.ranker.rank(cleanQuery, memories, queryEmbedding, usedMode).slice(0, limit);
+    const candidatePoolSize = Math.max(limit * 4, this.bootTopK * 2, 8);
+    const ranked = this.ranker.rank(cleanQuery, memories, queryEmbedding, usedMode).slice(0, candidatePoolSize);
     const boot = options.sessionId
       ? await this.store.listBootCandidates(
           options.sessionId,
@@ -46,16 +47,17 @@ export class MemoryRetriever {
         )
       : [];
     const visibleBoot = boot.filter((memory) => isMemoryVisible(memory, this.config, options.sessionId));
-    const merged = this.mergeCandidates(cleanQuery, ranked, visibleBoot).slice(0, limit);
-    await this.store.touch(merged);
+    const merged = this.mergeCandidates(cleanQuery, ranked, visibleBoot);
+    const selected = this.diversifyCandidates(cleanQuery, merged, limit);
+    await this.store.touch(selected);
     return {
-      memories: merged,
+      memories: selected,
       mode: usedMode,
-      keywordContribution: merged.reduce(
+      keywordContribution: selected.reduce(
         (sum, memory) => sum + (memory.scoreBreakdown?.keywordContribution ?? 0),
         0,
       ),
-      semanticContribution: merged.reduce(
+      semanticContribution: selected.reduce(
         (sum, memory) => sum + (memory.scoreBreakdown?.semanticContribution ?? 0),
         0,
       ),
@@ -137,6 +139,10 @@ export class MemoryRetriever {
     return this.embeddings.availability;
   }
 
+  previewMode(): RetrievalMode {
+    return this.resolveRetrievalMode();
+  }
+
   private resolveRetrievalMode(): RetrievalMode {
     if (this.config.retrieval.mode === "keyword") {
       return "keyword";
@@ -164,6 +170,41 @@ export class MemoryRetriever {
     return [...merged.values()].sort((left, right) => this.candidatePriority(query, right) - this.candidatePriority(query, left));
   }
 
+  private diversifyCandidates(query: string, candidates: MemoryRecord[], limit: number): MemoryRecord[] {
+    if (candidates.length <= limit) {
+      return candidates.slice(0, limit);
+    }
+
+    const recallIntent = /记得|remember|偏好|preference|项目|project|focus|重点|继续/i.test(query);
+    const lambda = recallIntent ? 0.82 : 0.74;
+    const pool = candidates.slice(0, Math.max(limit * 4, Math.min(12, candidates.length)));
+    const maxPriority = Math.max(...pool.map((memory) => this.candidatePriority(query, memory)), 1);
+    const selected: MemoryRecord[] = [];
+    const remaining = [...pool];
+
+    while (selected.length < limit && remaining.length > 0) {
+      let bestIndex = 0;
+      let bestScore = -Infinity;
+
+      for (let index = 0; index < remaining.length; index += 1) {
+        const candidate = remaining[index];
+        const relevance = this.candidatePriority(query, candidate) / maxPriority;
+        const redundancy = selected.length === 0
+          ? 0
+          : Math.max(...selected.map((picked) => this.memorySimilarity(candidate, picked)));
+        const mmrScore = lambda * relevance - (1 - lambda) * redundancy;
+        if (mmrScore > bestScore) {
+          bestScore = mmrScore;
+          bestIndex = index;
+        }
+      }
+
+      selected.push(remaining.splice(bestIndex, 1)[0]);
+    }
+
+    return selected;
+  }
+
   private candidatePriority(query: string, memory: MemoryRecord): number {
     const base =
       memory.score ??
@@ -188,5 +229,21 @@ export class MemoryRetriever {
             ? 0.3
             : 0;
     return base + recallBoost + scopeBoost;
+  }
+
+  private memorySimilarity(left: MemoryRecord, right: MemoryRecord): number {
+    const embeddingSimilarity =
+      left.embedding?.length && right.embedding?.length
+        ? Math.max(0, cosineSimilarity(left.embedding, right.embedding))
+        : 0;
+    const leftTopics = new Set(left.topics.map((topic) => topic.toLowerCase()));
+    const rightTopics = new Set(right.topics.map((topic) => topic.toLowerCase()));
+    const overlap = [...leftTopics].filter((topic) => rightTopics.has(topic)).length;
+    const union = new Set([...leftTopics, ...rightTopics]).size || 1;
+    const topicSimilarity = overlap / union;
+    const sameGroup = left.memoryGroup && right.memoryGroup && left.memoryGroup === right.memoryGroup ? 1 : 0;
+    const sameSummary = left.summary.trim().toLowerCase() === right.summary.trim().toLowerCase() ? 1 : 0;
+    const sameKind = left.kind === right.kind ? 1 : 0;
+    return Math.max(embeddingSimilarity, topicSimilarity, sameGroup, sameSummary, sameKind);
   }
 }
