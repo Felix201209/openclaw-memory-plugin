@@ -4,6 +4,8 @@ import { tokenize } from "../shared/text.js";
 export interface EmbeddingProvider {
   readonly providerId: "local" | "openai";
   readonly dimensions: number;
+  readonly available: boolean;
+  readonly availability: "exact" | "local" | "unavailable";
   embed(text: string): Promise<number[]>;
 }
 
@@ -24,6 +26,8 @@ function hashToken(token: string): number {
 
 class LocalEmbeddingProvider implements EmbeddingProvider {
   readonly providerId = "local" as const;
+  readonly available = true;
+  readonly availability = "local" as const;
 
   constructor(readonly dimensions: number) {}
 
@@ -39,6 +43,8 @@ class LocalEmbeddingProvider implements EmbeddingProvider {
 
 class OpenAiCompatibleEmbeddingProvider implements EmbeddingProvider {
   readonly providerId = "openai" as const;
+  readonly available = true;
+  readonly availability = "exact" as const;
 
   constructor(
     readonly dimensions: number,
@@ -72,12 +78,23 @@ class OpenAiCompatibleEmbeddingProvider implements EmbeddingProvider {
   }
 }
 
+class UnavailableEmbeddingProvider implements EmbeddingProvider {
+  readonly providerId = "openai" as const;
+  readonly available = false;
+  readonly availability = "unavailable" as const;
+
+  constructor(readonly dimensions: number) {}
+
+  async embed(): Promise<number[]> {
+    return [];
+  }
+}
+
 export function createEmbeddingProvider(config: ResolvedPluginConfig): EmbeddingProvider {
-  if (
-    config.embedding.provider === "openai" &&
-    config.embedding.apiKey &&
-    config.embedding.apiKey.trim()
-  ) {
+  if (config.embedding.provider === "openai") {
+    if (!config.embedding.apiKey?.trim()) {
+      return new UnavailableEmbeddingProvider(config.embedding.dimensions);
+    }
     return new OpenAiCompatibleEmbeddingProvider(
       config.embedding.dimensions,
       config.embedding.model,

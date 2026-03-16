@@ -108,6 +108,9 @@ export class PluginDatabase {
         compression_savings INTEGER NOT NULL,
         compression_savings_source TEXT NOT NULL DEFAULT 'estimated',
         retrieval_count INTEGER NOT NULL,
+        retrieval_mode TEXT NOT NULL DEFAULT 'keyword',
+        keyword_contribution REAL NOT NULL DEFAULT 0,
+        semantic_contribution REAL NOT NULL DEFAULT 0,
         details_json TEXT NOT NULL
       );
 
@@ -133,6 +136,9 @@ export class PluginDatabase {
       "compression_savings_source",
       "TEXT NOT NULL DEFAULT 'estimated'",
     );
+    this.ensureColumn("turn_profiles", "retrieval_mode", "TEXT NOT NULL DEFAULT 'keyword'");
+    this.ensureColumn("turn_profiles", "keyword_contribution", "REAL NOT NULL DEFAULT 0");
+    this.ensureColumn("turn_profiles", "semantic_contribution", "REAL NOT NULL DEFAULT 0");
   }
 
   get path(): string {

@@ -11,6 +11,7 @@ import { MemoryRanker } from "../memory/MemoryRanker.js";
 import { MemoryRetriever } from "../memory/MemoryRetriever.js";
 import { MemoryStore } from "../memory/MemoryStore.js";
 import { SessionStateStore } from "../memory/SessionStateStore.js";
+import { assignMemoryScope } from "../memory/scopes.js";
 import { PluginDatabase } from "../storage/PluginDatabase.js";
 import type {
   ChatTurn,
@@ -43,6 +44,9 @@ type PendingSessionContext = {
   compression: CompressionResult;
   toolResults: CompactedToolResult[];
   memoryCandidates: number;
+  retrievalMode: "keyword" | "embedding" | "hybrid";
+  keywordContribution: number;
+  semanticContribution: number;
   preparedAt: string;
 };
 
@@ -82,7 +86,7 @@ export class PluginContainer {
 
     this.eventStore = new EventStore(this.database);
     this.stateStore = new SessionStateStore(this.database);
-    this.memoryStore = new MemoryStore(this.database, embeddings, config.memory.dedupeSimilarity);
+    this.memoryStore = new MemoryStore(this.database, embeddings, config.memory.dedupeSimilarity, config);
     this.memoryExtractor = new MemoryExtractor({
       writeThreshold: config.memory.writeThreshold,
       preferenceTtlDays: config.memory.preferenceTtlDays,
@@ -95,6 +99,7 @@ export class PluginContainer {
       new MemoryRanker(),
       embeddings,
       config.memory.bootTopK,
+      config,
     );
     this.contextCompressor = new ContextCompressor(
       config.compression.recentTurns,
@@ -120,9 +125,10 @@ export class PluginContainer {
 
     const state = await this.stateStore.get(params.sessionId);
     const toolResults = await this.toolOutputStore.listRecent(params.sessionId, 6);
-    const memories = await this.memoryRetriever.retrieve(cleanedPrompt, this.config.memory.topK, {
-        sessionId: params.sessionId,
-      });
+    const retrieval = await this.memoryRetriever.retrieveWithContext(cleanedPrompt, this.config.memory.topK, {
+      sessionId: params.sessionId,
+    });
+    const memories = retrieval.memories;
     const compression = this.contextCompressor.compress(historyMessages, state);
     const promptBuild = this.promptBuilder.build({
       budget: this.config.compression.contextBudget,
@@ -145,6 +151,9 @@ export class PluginContainer {
       compression,
       toolResults,
       memoryCandidates: memories.length,
+      retrievalMode: retrieval.mode,
+      keywordContribution: retrieval.keywordContribution,
+      semanticContribution: retrieval.semanticContribution,
       preparedAt,
     };
 
@@ -177,6 +186,9 @@ export class PluginContainer {
       memoryCandidates: pending.memoryCandidates,
       memoryWriteCount: 0,
       toolTokensSaved: pending.toolResults.reduce((sum, item) => sum + (item.savedTokens ?? 0), 0),
+      retrievalMode: pending.retrievalMode,
+      keywordContribution: pending.keywordContribution,
+      semanticContribution: pending.semanticContribution,
       provider: params.provider,
       model: params.model,
       usage: undefined,
@@ -287,7 +299,7 @@ export class PluginContainer {
       state = await this.stateStore.applyPatch(params.sessionId, extraction.statePatch);
       if (this.config.memory.autoWrite) {
         const limited = this.memoryExtractor.limit(
-          extraction.memories,
+          extraction.memories.map((memory) => assignMemoryScope(memory, this.config, params.sessionId)),
           this.config.memory.maxWritesPerTurn,
         );
         const writeResult = await this.memoryStore.upsertMany(limited);
@@ -335,6 +347,9 @@ export class PluginContainer {
       compressionSavings: compressionSavingsValue,
       compressionSavingsSource,
       retrievalCount: run.memories.length,
+      retrievalMode: run.retrievalMode,
+      keywordContribution: Math.round(run.keywordContribution),
+      semanticContribution: Math.round(run.semanticContribution),
     };
 
     await this.profileStore.record(
@@ -361,6 +376,11 @@ export class PluginContainer {
               updated,
               superseded,
             },
+            retrieval: {
+              mode: run.retrievalMode,
+              keywordContribution: run.keywordContribution,
+              semanticContribution: run.semanticContribution,
+            },
             metricSources: {
               promptTokens: promptTokensSource,
               toolTokens: toolTokensSource,
@@ -381,6 +401,11 @@ export class PluginContainer {
               written,
               updated,
               superseded,
+            },
+            retrieval: {
+              mode: run.retrievalMode,
+              keywordContribution: run.keywordContribution,
+              semanticContribution: run.semanticContribution,
             },
             metricSources: {
               promptTokens: promptTokensSource,

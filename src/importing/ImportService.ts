@@ -9,10 +9,12 @@ import type {
   ImportFileReport,
   ImportJobReport,
   MemoryRecord,
+  MemoryScope,
 } from "../types/domain.js";
 import type { PluginContainer } from "../plugin/runtime-state.js";
 import type { ResolvedPluginConfig } from "../config/schema.js";
 import { resolvePluginPaths } from "../storage/paths.js";
+import { assignMemoryScope } from "../memory/scopes.js";
 
 export class ImportService {
   private readonly paths = resolvePluginPaths();
@@ -24,18 +26,29 @@ export class ImportService {
   ) {}
 
   async dryRun(extraRoots: string[] = []): Promise<ImportJobReport> {
-    return await this.execute("dry-run", extraRoots);
+    return await this.execute("dry-run", extraRoots, {});
   }
 
-  async run(extraRoots: string[] = []): Promise<ImportJobReport> {
-    return await this.execute("run", extraRoots);
+  async run(extraRoots: string[] = [], options: { scopeMapping?: Partial<Record<MemoryRecord["kind"], MemoryScope>> } = {}): Promise<ImportJobReport> {
+    return await this.execute("run", extraRoots, options);
+  }
+
+  async dryRunWithOptions(
+    extraRoots: string[] = [],
+    options: { scopeMapping?: Partial<Record<MemoryRecord["kind"], MemoryScope>> } = {},
+  ): Promise<ImportJobReport> {
+    return await this.execute("dry-run", extraRoots, options);
   }
 
   async status(): Promise<ImportJobReport | null> {
     return await readJsonFile<ImportJobReport | null>(this.paths.latestImportPath, null);
   }
 
-  private async execute(mode: "dry-run" | "run", extraRoots: string[]): Promise<ImportJobReport> {
+  private async execute(
+    mode: "dry-run" | "run",
+    extraRoots: string[],
+    options: { scopeMapping?: Partial<Record<MemoryRecord["kind"], MemoryScope>> },
+  ): Promise<ImportJobReport> {
     const roots = await this.resolveRoots(extraRoots);
     const files = await scanRoots(roots, this.config.imports.maxFiles);
     const job: ImportJobReport = {
@@ -47,19 +60,43 @@ export class ImportService {
       scannedFiles: files.length,
       processedFiles: 0,
       imported: 0,
+      merged: 0,
+      superseded: 0,
       skippedDuplicates: 0,
       rejectedNoise: 0,
+      rejectedSensitive: 0,
+      uncertainCandidates: 0,
       files: [],
       notes: [],
+      scopeMapping: {
+        preference: "private",
+        semantic:
+          this.config.identity.mode === "shared" && this.config.identity.sharedScope ? "shared" : "workspace",
+        session_state: "agent_local",
+        episodic: "private",
+        ...options.scopeMapping,
+      },
     };
 
+    if (mode === "run") {
+      await ensureDir(this.paths.importsDir);
+      const snapshotPath = path.join(this.paths.importsDir, `${job.jobId}-snapshot.json`);
+      await writeJsonFile(snapshotPath, await this.container.memoryStore.listActive());
+      job.snapshotPath = snapshotPath;
+      job.notes.push("Snapshot written before import so the previous memory state can be restored manually.");
+    }
+
     for (const filePath of files) {
-      const fileReport = await this.processFile(filePath, mode);
+      const fileReport = await this.processFile(filePath, mode, job.scopeMapping ?? {});
       job.files.push(fileReport);
       job.processedFiles += 1;
       job.imported += fileReport.imported;
+      job.merged += fileReport.merged;
+      job.superseded += fileReport.superseded;
       job.skippedDuplicates += fileReport.skipped;
       job.rejectedNoise += fileReport.rejected;
+      job.rejectedSensitive += fileReport.rejectedSensitive;
+      job.uncertainCandidates += fileReport.uncertain;
     }
 
     job.completedAt = new Date().toISOString();
@@ -82,11 +119,22 @@ export class ImportService {
     return Array.from(new Set([...defaults, ...pluginArtifacts, ...extraRoots.map((root) => path.resolve(this.cwd, root))]));
   }
 
-  private async processFile(filePath: string, mode: "dry-run" | "run"): Promise<ImportFileReport> {
+  private async processFile(
+    filePath: string,
+    mode: "dry-run" | "run",
+    scopeMapping: Record<string, MemoryScope>,
+  ): Promise<ImportFileReport> {
     const kind = classifyPath(filePath);
     try {
       const { candidates, rejectedByNormalization } = await this.readCandidates(filePath, kind);
-      const filtered = candidates.filter((candidate) => !shouldSuppressMemory(candidate));
+      const filtered = candidates
+        .map((candidate) =>
+          applyImportScopeMapping(
+            assignMemoryScope(candidate, this.config, candidate.sourceSessionId),
+            scopeMapping,
+          ),
+        )
+        .filter((candidate) => !shouldSuppressMemory(candidate));
       const rejected = rejectedByNormalization + (candidates.length - filtered.length);
       if (mode === "dry-run") {
         return {
@@ -94,8 +142,12 @@ export class ImportService {
           kind,
           status: filtered.length > 0 ? "imported" : rejected > 0 ? "rejected" : "skipped",
           imported: filtered.length,
+          merged: 0,
+          superseded: 0,
           skipped: 0,
           rejected,
+          rejectedSensitive: 0,
+          uncertain: 0,
         };
       }
 
@@ -105,8 +157,12 @@ export class ImportService {
         kind,
         status: filtered.length > 0 ? "imported" : rejected > 0 ? "rejected" : "skipped",
         imported: result.written + result.superseded,
+        merged: result.updated,
+        superseded: result.superseded,
         skipped: result.updated,
         rejected,
+        rejectedSensitive: 0,
+        uncertain: 0,
       };
     } catch (error) {
       return {
@@ -114,8 +170,12 @@ export class ImportService {
         kind,
         status: "failed",
         imported: 0,
+        merged: 0,
+        superseded: 0,
         skipped: 0,
         rejected: 0,
+        rejectedSensitive: 0,
+        uncertain: 0,
         error: error instanceof Error ? error.message : String(error),
       };
     }
@@ -145,6 +205,21 @@ export class ImportService {
       .map((line) => JSON.parse(line) as Record<string, unknown>);
     return normalizeTurnsIntoMemories(turns, this.container);
   }
+}
+
+function applyImportScopeMapping(
+  memory: MemoryRecord,
+  scopeMapping: Record<string, MemoryScope>,
+): MemoryRecord {
+  const mappedScope = scopeMapping[memory.kind];
+  if (!mappedScope || mappedScope === memory.scope) {
+    return memory;
+  }
+  return {
+    ...memory,
+    scope: mappedScope,
+    scopeKey: undefined,
+  };
 }
 
 function classifyPath(filePath: string): ImportFileReport["kind"] {

@@ -6,6 +6,8 @@ export const defaultPluginConfig = {
   identity: {
     mode: "local" as const,
     backendType: "local" as const,
+    workspaceScope: "default",
+    userScope: "default",
     verifyOnStartup: true,
   },
   embedding: {
@@ -25,6 +27,10 @@ export const defaultPluginConfig = {
     semanticTtlDays: 120,
     episodicTtlDays: 14,
     sessionStateTtlDays: 21,
+  },
+  retrieval: {
+    mode: "hybrid" as const,
+    fallbackToKeyword: true,
   },
   compression: {
     recentTurns: 6,
@@ -60,6 +66,7 @@ export function buildDefaultPluginEntry(overrides: Record<string, unknown> = {})
     config: {
       identity: defaultPluginConfig.identity,
       memory: defaultPluginConfig.memory,
+      retrieval: defaultPluginConfig.retrieval,
       compression: defaultPluginConfig.compression,
       profile: defaultPluginConfig.profile,
       inspect: defaultPluginConfig.inspect,

@@ -17,17 +17,27 @@ export function registerStatusCommands(program: Command): void {
       const latestExport = await exportService.latest();
       const latestPrune = await readJsonFile<PruneReport | null>(pluginPaths.latestPrunePath, null);
       const identityStatus = identity.status();
+      const backendHealth = await container.memoryStore.pingBackend();
       const noisyCandidates = memories
         .map((memory) => ({ id: memory.id, reasons: explainSuppression(memory) }))
         .filter((entry) => entry.reasons.length > 0);
+      const scopeCounts = memories.reduce<Record<string, number>>((summary, memory) => {
+        const key = memory.scope ?? "private";
+        summary[key] = (summary[key] ?? 0) + 1;
+        return summary;
+      }, {});
       printOutput(this, {
         enabled,
         mode: identityStatus.mode,
         identity: identityStatus,
+        backendHealth,
+        backendType: resolved.identity.backendType,
+        retrievalMode: resolved.retrieval.mode,
         autoWriteEnabled: resolved.memory.autoWrite,
         openclawHome,
         databasePath: container.database.path,
         embeddingProvider: resolved.embedding.provider,
+        embeddingAvailability: container.memoryRetriever.embeddingAvailability(),
         inspectPath: resolved.inspect.httpPath,
         configSources: pluginConfigSources(),
         memoryCount: memories.length,
@@ -35,6 +45,9 @@ export function registerStatusCommands(program: Command): void {
         sessionCount: sessions.length,
         lastHookExecutionAt: latestProfile?.createdAt ?? sessions[0]?.updatedAt ?? null,
         recentRetrievalCount: latestProfile?.retrievalCount ?? 0,
+        recentRetrievalMode: latestProfile?.retrievalMode ?? resolved.retrieval.mode,
+        recentKeywordContribution: latestProfile?.keywordContribution ?? 0,
+        recentSemanticContribution: latestProfile?.semanticContribution ?? 0,
         recentCompressionSavings: latestProfile?.compressionSavings ?? 0,
         recentMemoryWrites: latestProfile?.memoryWritten ?? 0,
         lastImportTime: latestImport?.completedAt ?? null,
@@ -48,6 +61,7 @@ export function registerStatusCommands(program: Command): void {
         lastExportPath: latestExport?.outputPath ?? null,
         lastPrune: latestPrune,
         noisyActiveMemoryCount: noisyCandidates.length,
+        scopeCounts,
         lastRecoveryWarning: identityStatus.warnings[0] ?? null,
         lastError:
           typeof latestProfile?.details?.error === "string" ? latestProfile.details.error : null,

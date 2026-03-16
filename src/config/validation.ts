@@ -30,6 +30,9 @@ export function getIdentityStatus(config: ResolvedPluginConfig): IdentityStatus 
   if (config.identity.mode === "cloud" && !config.identity.apiKey?.trim()) {
     warnings.push("Cloud mode is configured but no identity API key was found.");
   }
+  if (config.identity.mode === "shared" && !config.identity.sharedScope?.trim()) {
+    warnings.push("Shared mode should set identity.sharedScope so multiple agents use the same logical space.");
+  }
 
   return {
     mode: config.identity.mode,
@@ -41,6 +44,7 @@ export function getIdentityStatus(config: ResolvedPluginConfig): IdentityStatus 
     apiKeyPresent: Boolean(config.identity.apiKey?.trim()),
     memorySpaceId: config.identity.memorySpaceId,
     endpoint: config.identity.endpoint,
+    sharedScope: config.identity.sharedScope,
     reconnectReady,
     reachability,
     warnings,
@@ -72,11 +76,11 @@ export function validateResolvedConfig(
     });
   }
 
-  if (config.identity.mode === "cloud" && !config.identity.apiKey?.trim()) {
+  if ((config.identity.mode === "cloud" || config.identity.mode === "shared") && !config.identity.apiKey?.trim() && config.identity.backendType === "recall-http") {
     issues.push({
       field: "identity.apiKey",
       severity: "error",
-      message: "Cloud mode requires an identity API key.",
+      message: `${config.identity.mode} mode requires an identity API key for the HTTP backend.`,
       repairHint: "Set OPENCLAW_RECALL_IDENTITY_API_KEY or plugins.entries.openclaw-recall.config.identity.apiKey.",
     });
   }
@@ -87,6 +91,24 @@ export function validateResolvedConfig(
       severity: "warn",
       message: "Remote identity backend has no endpoint configured.",
       repairHint: "Set identity.endpoint so reconnect verification knows where to point.",
+    });
+  }
+
+  if (config.identity.mode === "shared" && !config.identity.sharedScope?.trim()) {
+    issues.push({
+      field: "identity.sharedScope",
+      severity: "error",
+      message: "Shared mode requires identity.sharedScope.",
+      repairHint: "Set OPENCLAW_RECALL_SHARED_SCOPE or plugins.entries.openclaw-recall.config.identity.sharedScope.",
+    });
+  }
+
+  if (config.retrieval.mode === "embedding" && config.embedding.provider === "openai" && !config.embedding.apiKey?.trim()) {
+    issues.push({
+      field: "retrieval.mode",
+      severity: "warn",
+      message: "Embedding-only retrieval is configured but the OpenAI embedding API key is missing.",
+      repairHint: "Set OPENCLAW_RECALL_EMBEDDING_API_KEY or switch retrieval.mode to hybrid/keyword.",
     });
   }
 

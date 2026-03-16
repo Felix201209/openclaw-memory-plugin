@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import { registerConfigCommands } from "./commands/config.js";
+import { registerBackendCommands } from "./commands/backend.js";
 import { registerDoctorCommands } from "./commands/doctor.js";
 import { registerExportCommands } from "./commands/export.js";
 import { registerImportCommands } from "./commands/import.js";
@@ -17,6 +18,7 @@ program
   .version("1.0.1");
 
 registerStatusCommands(program);
+registerBackendCommands(program);
 registerDoctorCommands(program);
 registerMemoryCommands(program);
 registerProfileCommands(program);

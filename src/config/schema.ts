@@ -1,20 +1,22 @@
 import { DEFAULT_HTTP_PATH } from "./defaults.js";
 
 export type EmbeddingProviderId = "local" | "openai";
-export type IdentityMode = "local" | "reconnect" | "cloud";
+export type IdentityMode = "local" | "reconnect" | "cloud" | "shared";
+export type RetrievalMode = "keyword" | "embedding" | "hybrid";
 
 export type OpenClawMemoryPluginConfig = {
   enabled?: boolean;
   storageDir?: string;
   identity?: {
     mode?: IdentityMode;
-    backendType?: "local" | "openai-memory" | "custom";
+    backendType?: "local" | "recall-http" | "custom";
     identityKey?: string;
     apiKey?: string;
     memorySpaceId?: string;
     endpoint?: string;
     workspaceScope?: string;
     userScope?: string;
+    sharedScope?: string;
     verifyOnStartup?: boolean;
   };
   embedding?: {
@@ -35,6 +37,10 @@ export type OpenClawMemoryPluginConfig = {
     semanticTtlDays?: number;
     episodicTtlDays?: number;
     sessionStateTtlDays?: number;
+  };
+  retrieval?: {
+    mode?: RetrievalMode;
+    fallbackToKeyword?: boolean;
   };
   compression?: {
     recentTurns?: number;
@@ -67,13 +73,14 @@ export type ResolvedPluginConfig = {
   databasePath: string;
   identity: {
     mode: IdentityMode;
-    backendType: "local" | "openai-memory" | "custom";
+    backendType: "local" | "recall-http" | "custom";
     identityKey?: string;
     apiKey?: string;
     memorySpaceId?: string;
     endpoint?: string;
     workspaceScope?: string;
     userScope?: string;
+    sharedScope?: string;
     verifyOnStartup: boolean;
   };
   embedding: {
@@ -94,6 +101,10 @@ export type ResolvedPluginConfig = {
     semanticTtlDays: number;
     episodicTtlDays: number;
     sessionStateTtlDays: number;
+  };
+  retrieval: {
+    mode: RetrievalMode;
+    fallbackToKeyword: boolean;
   };
   compression: {
     recentTurns: number;
@@ -130,14 +141,15 @@ export const pluginConfigSchema = {
       type: "object",
       additionalProperties: false,
       properties: {
-        mode: { type: "string", enum: ["local", "reconnect", "cloud"] },
-        backendType: { type: "string", enum: ["local", "openai-memory", "custom"] },
+        mode: { type: "string", enum: ["local", "reconnect", "cloud", "shared"] },
+        backendType: { type: "string", enum: ["local", "recall-http", "custom"] },
         identityKey: { type: "string" },
         apiKey: { type: "string" },
         memorySpaceId: { type: "string" },
         endpoint: { type: "string" },
         workspaceScope: { type: "string" },
         userScope: { type: "string" },
+        sharedScope: { type: "string" },
         verifyOnStartup: { type: "boolean" },
       },
     },
@@ -166,6 +178,14 @@ export const pluginConfigSchema = {
         semanticTtlDays: { type: "number", minimum: 1, maximum: 3650 },
         episodicTtlDays: { type: "number", minimum: 1, maximum: 3650 },
         sessionStateTtlDays: { type: "number", minimum: 1, maximum: 3650 },
+      },
+    },
+    retrieval: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        mode: { type: "string", enum: ["keyword", "embedding", "hybrid"] },
+        fallbackToKeyword: { type: "boolean" },
       },
     },
     compression: {
@@ -241,7 +261,7 @@ export const runtimePluginConfigSchema = {
     },
     "identity.mode": {
       label: "Identity Mode",
-      help: "Use local-only identity or reconnect to an existing memory space.",
+      help: "Use local, reconnect, cloud, or shared mode for the memory backend.",
     },
     "identity.identityKey": {
       label: "Identity Key",
@@ -254,6 +274,15 @@ export const runtimePluginConfigSchema = {
       sensitive: true,
       placeholder: "sk-...",
       help: "Required only when your memory backend needs a remote API key.",
+    },
+    "identity.sharedScope": {
+      label: "Shared Scope",
+      placeholder: "team-alpha",
+      help: "Optional shared memory scope for cross-agent or cross-machine recall.",
+    },
+    "retrieval.mode": {
+      label: "Retrieval Mode",
+      help: "Keyword, embedding, or hybrid retrieval.",
     },
     "inspect.httpPath": {
       label: "Inspect HTTP Path",

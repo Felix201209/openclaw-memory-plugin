@@ -47,7 +47,7 @@ export function registerMemoryCommands(program: Command): void {
       .option("--limit <n>", "Maximum records", "8")
       .action(async function action(query: string) {
         const { container } = await createCliContainer();
-        const result = await container.memoryRetriever.retrieve(query, Number(this.opts().limit), {
+        const result = await container.memoryRetriever.retrieveWithContext(query, Number(this.opts().limit), {
           sessionId: this.opts().session,
         });
         printOutput(this, result);
@@ -62,7 +62,7 @@ export function registerMemoryCommands(program: Command): void {
       .option("--limit <n>", "Maximum records", "8")
       .action(async function action(query: string) {
         const { container } = await createCliContainer();
-        const result = await container.memoryRetriever.explain(query, Number(this.opts().limit), {
+        const result = await container.memoryRetriever.retrieveWithContext(query, Number(this.opts().limit), {
           sessionId: this.opts().session,
         });
         printOutput(this, result);

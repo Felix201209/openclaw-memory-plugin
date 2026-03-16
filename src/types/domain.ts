@@ -10,9 +10,14 @@ export interface ChatTurn {
 }
 
 export type MemoryKind = "preference" | "semantic" | "session_state" | "episodic";
+export type MemoryScope = "private" | "workspace" | "shared" | "agent_local";
+export type RetrievalMode = "keyword" | "embedding" | "hybrid";
 
 export interface MemoryScoreBreakdown {
+  retrievalMode?: RetrievalMode;
   semanticSimilarity: number;
+  semanticContribution?: number;
+  keywordContribution?: number;
   salience: number;
   recency: number;
   confidence: number;
@@ -39,11 +44,16 @@ export interface MemoryRecord {
   confidence?: number;
   importance?: number;
   active?: boolean;
+  scope?: MemoryScope;
+  scopeKey?: string;
+  backend?: "local" | "remote";
+  sensitive?: boolean;
   memoryGroup?: string;
   supersededAt?: string;
   supersededBy?: string;
   version?: number;
   retrievalReason?: string;
+  suppressedReasons?: string[];
   scoreBreakdown?: MemoryScoreBreakdown;
   sourceSessionId: string;
   sourceTurnIds: string[];
@@ -159,6 +169,9 @@ export interface TurnProfile {
   compressionSavings: number;
   compressionSavingsSource: MetricSource;
   retrievalCount: number;
+  retrievalMode: RetrievalMode;
+  keywordContribution: number;
+  semanticContribution: number;
 }
 
 export interface StoredTurnProfile extends TurnProfile {
@@ -178,7 +191,7 @@ export interface ConfigValidationReport {
   precedence: string[];
 }
 
-export type IdentityMode = "local" | "reconnect" | "cloud";
+export type IdentityMode = "local" | "reconnect" | "cloud" | "shared";
 
 export interface IdentityStatus {
   mode: IdentityMode;
@@ -190,6 +203,7 @@ export interface IdentityStatus {
   apiKeyPresent: boolean;
   memorySpaceId?: string;
   endpoint?: string;
+  sharedScope?: string;
   reconnectReady: boolean;
   reachability: "local" | "configured" | "unavailable";
   warnings: string[];
@@ -200,8 +214,12 @@ export interface ImportFileReport {
   kind: "memory" | "session" | "transcript" | "artifact" | "unknown";
   status: "imported" | "skipped" | "rejected" | "failed";
   imported: number;
+  merged: number;
+  superseded: number;
   skipped: number;
   rejected: number;
+  rejectedSensitive: number;
+  uncertain: number;
   error?: string;
 }
 
@@ -215,10 +233,16 @@ export interface ImportJobReport {
   scannedFiles: number;
   processedFiles: number;
   imported: number;
+  merged: number;
+  superseded: number;
   skippedDuplicates: number;
   rejectedNoise: number;
+  rejectedSensitive: number;
+  uncertainCandidates: number;
   files: ImportFileReport[];
   notes: string[];
+  scopeMapping?: Record<string, MemoryScope>;
+  snapshotPath?: string;
 }
 
 export interface ExportReport {
@@ -229,6 +253,7 @@ export interface ExportReport {
   outputPath: string;
   itemCount: number;
   sessionId?: string;
+  scopeCounts?: Partial<Record<MemoryScope, number>>;
 }
 
 export interface PruneReport {
@@ -252,6 +277,9 @@ export interface PluginRunContext {
   memoryCandidates: number;
   memoryWriteCount: number;
   toolTokensSaved: number;
+  retrievalMode: RetrievalMode;
+  keywordContribution: number;
+  semanticContribution: number;
   provider: string;
   model: string;
   usage?: {

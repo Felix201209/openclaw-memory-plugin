@@ -17,13 +17,16 @@ export function registerConfigCommands(program: Command): void {
     config
       .command("init")
       .description("Print or write a starter plugin config entry")
-      .option("--mode <mode>", "Identity mode: local | reconnect | cloud", "local")
+      .option("--mode <mode>", "Identity mode: local | reconnect | cloud | shared", "local")
+      .option("--backend <type>", "Backend type: local | recall-http | custom")
       .option("--identity-key <key>", "Persistent identity key for reconnect mode")
       .option("--memory-space <id>", "Existing memory space id")
       .option("--api-key <key>", "Remote memory backend API key")
       .option("--endpoint <url>", "Remote memory backend endpoint")
       .option("--workspace-scope <name>", "Workspace-scoped identity label")
       .option("--user-scope <name>", "User-scoped identity label")
+      .option("--shared-scope <name>", "Shared scope label for cross-agent recall")
+      .option("--retrieval-mode <mode>", "Retrieval mode: keyword | embedding | hybrid")
       .option("--write-openclaw", "Merge the starter entry into the active openclaw.json")
       .action(async function action() {
         const loaded = await loadOpenClawPluginConfig();
@@ -31,15 +34,21 @@ export function registerConfigCommands(program: Command): void {
         const entry = buildDefaultPluginEntry({
           identity: {
             mode: options.mode,
-            backendType: options.mode === "local" ? "local" : "custom",
+            backendType: options.backend ?? (options.mode === "local" ? "local" : "recall-http"),
             identityKey: options.identityKey,
             apiKey: options.apiKey,
             memorySpaceId: options.memorySpace,
             endpoint: options.endpoint,
             workspaceScope: options.workspaceScope,
             userScope: options.userScope,
+            sharedScope: options.sharedScope,
             verifyOnStartup: true,
           },
+          retrieval: options.retrievalMode
+            ? {
+                mode: options.retrievalMode,
+              }
+            : undefined,
         });
 
         if (!this.opts().writeOpenclaw) {

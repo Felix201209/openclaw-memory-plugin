@@ -2,15 +2,31 @@ import { cosineSimilarity, EmbeddingProvider } from "./EmbeddingProvider.js";
 import { PluginDatabase } from "../storage/PluginDatabase.js";
 import { shouldSuppressMemory } from "../shared/safety.js";
 import { MemoryRecord } from "../types/domain.js";
+import { RecallHttpBackendClient } from "../backend/RecallHttpBackend.js";
+import type { ResolvedPluginConfig } from "../config/schema.js";
 
 export class MemoryStore {
+  private readonly remote: RecallHttpBackendClient | null;
+
   constructor(
     private readonly database: PluginDatabase,
     private readonly embeddings: EmbeddingProvider,
     private readonly dedupeSimilarity: number,
-  ) {}
+    private readonly config?: ResolvedPluginConfig,
+  ) {
+    this.remote =
+      config &&
+      config.identity.backendType === "recall-http" &&
+      config.identity.mode !== "local" &&
+      config.identity.endpoint?.trim()
+        ? new RecallHttpBackendClient(config)
+        : null;
+  }
 
   async listActive(): Promise<MemoryRecord[]> {
+    if (this.remoteEnabled()) {
+      return await this.remote!.listActive();
+    }
     const rows = this.database.connection
       .prepare(`
         SELECT *
@@ -30,6 +46,9 @@ export class MemoryStore {
   }
 
   async getById(id: string): Promise<MemoryRecord | null> {
+    if (this.remoteEnabled()) {
+      return await this.remote!.getById(id);
+    }
     const row = this.database.connection
       .prepare(`SELECT * FROM memories WHERE id = ? LIMIT 1`)
       .get(id) as MemoryRow | undefined;
@@ -37,6 +56,9 @@ export class MemoryStore {
   }
 
   async listBySession(sessionId: string, limit = 25): Promise<MemoryRecord[]> {
+    if (this.remoteEnabled()) {
+      return (await this.listActive()).filter((memory) => memory.sourceSessionId === sessionId).slice(0, limit);
+    }
     const rows = this.database.connection
       .prepare(
         `
@@ -73,6 +95,9 @@ export class MemoryStore {
   async pruneNoise(options?: {
     dryRun?: boolean;
   }): Promise<{ scanned: number; pruned: number; ids: string[]; dryRun: boolean }> {
+    if (this.remoteEnabled()) {
+      return await this.remote!.pruneNoise(options?.dryRun === true);
+    }
     const memories = await this.listActive();
     const noisy = memories.filter((memory) => shouldSuppressMemory(memory));
     if (!options?.dryRun) {
@@ -94,6 +119,9 @@ export class MemoryStore {
     updated: number;
     superseded: number;
   }> {
+    if (this.remoteEnabled()) {
+      return await this.remote!.upsertMany(candidates);
+    }
     let written = 0;
     let updated = 0;
     let superseded = 0;
@@ -172,6 +200,10 @@ export class MemoryStore {
   }
 
   async touch(memories: MemoryRecord[]): Promise<void> {
+    if (this.remoteEnabled()) {
+      await this.remote!.touch(memories.map((memory) => memory.id));
+      return;
+    }
     const now = Date.now();
     for (const memory of memories) {
       this.database.connection
@@ -186,6 +218,18 @@ export class MemoryStore {
       ...memory,
       retrievalReason: `Candidate memory for query "${query}".`,
     }));
+  }
+
+  async pingBackend(): Promise<{ ok: boolean; detail: string; mode: string }> {
+    if (!this.remoteEnabled()) {
+      return { ok: true, detail: "local sqlite backend", mode: "local" };
+    }
+    const result = await this.remote!.ping();
+    return { ...result, mode: this.config?.identity.mode ?? "remote" };
+  }
+
+  private remoteEnabled(): boolean {
+    return Boolean(this.remote);
   }
 
   private async findSimilarActive(
@@ -377,10 +421,15 @@ export class MemoryStore {
       confidence: typeof meta.confidence === "number" ? meta.confidence : undefined,
       importance: typeof meta.importance === "number" ? meta.importance : undefined,
       active: meta.active !== false,
+      scope: typeof meta.scope === "string" ? (meta.scope as MemoryRecord["scope"]) : "private",
+      scopeKey: typeof meta.scopeKey === "string" ? meta.scopeKey : undefined,
+      backend: typeof meta.backend === "string" ? (meta.backend as "local" | "remote") : "local",
+      sensitive: meta.sensitive === true,
       memoryGroup: typeof meta.memoryGroup === "string" ? meta.memoryGroup : undefined,
       supersededAt: typeof meta.supersededAt === "string" ? meta.supersededAt : undefined,
       supersededBy: typeof meta.supersededBy === "string" ? meta.supersededBy : undefined,
       version: typeof meta.version === "number" ? meta.version : 1,
+      suppressedReasons: Array.isArray(meta.suppressedReasons) ? (meta.suppressedReasons as string[]) : undefined,
       sourceSessionId: row.source_session_id,
       sourceTurnIds: JSON.parse(row.source_turn_ids_json) as string[],
       embedding: JSON.parse(row.embedding_json) as number[],
@@ -424,10 +473,15 @@ function toMeta(memory: MemoryRecord): Record<string, unknown> {
     confidence: memory.confidence ?? 0.7,
     importance: memory.importance ?? memory.salience,
     active: memory.active !== false,
+    scope: memory.scope ?? "private",
+    scopeKey: memory.scopeKey,
+    backend: memory.backend ?? "local",
+    sensitive: memory.sensitive === true,
     memoryGroup: memory.memoryGroup,
     supersededAt: memory.supersededAt,
     supersededBy: memory.supersededBy,
     version: memory.version ?? 1,
+    suppressedReasons: memory.suppressedReasons ?? [],
   };
 }
 

@@ -21,6 +21,7 @@ export function registerDoctorCommands(program: Command): void {
       const sessions = await container.eventStore.listSessions(5);
       const memories = await container.memoryStore.listActive();
       const identityStatus = identity.status();
+      const backendHealth = await container.memoryStore.pingBackend();
       const validation = validateResolvedConfig(resolved, ["plugins.entries.openclaw-recall.config", "defaults"]);
       const latestImport = await importService.status();
       const latestExport = await exportService.latest();
@@ -90,8 +91,13 @@ export function registerDoctorCommands(program: Command): void {
           },
           {
             name: "identity / backend",
-            status: identityStatus.reconnectReady ? "pass" : identityStatus.mode === "local" ? "pass" : "warn",
-            detail: `mode=${identityStatus.mode}, backend=${identityStatus.backendType}, configured=${identityStatus.configured}, reachability=${identityStatus.reachability}`,
+            status:
+              identityStatus.mode === "local"
+                ? "pass"
+                : identityStatus.reconnectReady && backendHealth.ok
+                  ? "pass"
+                  : "warn",
+            detail: `mode=${identityStatus.mode}, backend=${identityStatus.backendType}, configured=${identityStatus.configured}, reachability=${identityStatus.reachability}, backendHealth=${backendHealth.detail}`,
           },
           {
             name: "env/config precedence",
@@ -134,6 +140,16 @@ export function registerDoctorCommands(program: Command): void {
               resolved.embedding.provider === "local"
                 ? "Local hashed embeddings enabled"
                 : "OpenAI-compatible embeddings selected but no API key detected",
+          },
+          {
+            name: "retrieval mode",
+            status:
+              resolved.retrieval.mode === "keyword" ||
+              resolved.embedding.provider === "local" ||
+              Boolean(resolved.embedding.apiKey?.trim())
+                ? "pass"
+                : "warn",
+            detail: `configured=${resolved.retrieval.mode}, latest=${latestProfile?.retrievalMode ?? "none"}, fallbackToKeyword=${resolved.retrieval.fallbackToKeyword}`,
           },
           {
             name: "inspect route",
@@ -180,7 +196,7 @@ export function registerDoctorCommands(program: Command): void {
             status: (latestProfile?.retrievalCount ?? 0) > 0 ? "pass" : "warn",
             detail:
               (latestProfile?.retrievalCount ?? 0) > 0
-                ? `Latest run retrieved ${latestProfile?.retrievalCount} memories`
+                ? `Latest run retrieved ${latestProfile?.retrievalCount} memories via ${latestProfile?.retrievalMode ?? resolved.retrieval.mode}`
                 : "No retrieval activity recorded yet",
           },
           {

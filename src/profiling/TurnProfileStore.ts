@@ -26,8 +26,11 @@ export class TurnProfileStore {
           compression_savings,
           compression_savings_source,
           retrieval_count,
+          retrieval_mode,
+          keyword_contribution,
+          semantic_contribution,
           details_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(run_id) DO UPDATE SET
           session_id = excluded.session_id,
           created_at = excluded.created_at,
@@ -46,6 +49,9 @@ export class TurnProfileStore {
           compression_savings = excluded.compression_savings,
           compression_savings_source = excluded.compression_savings_source,
           retrieval_count = excluded.retrieval_count,
+          retrieval_mode = excluded.retrieval_mode,
+          keyword_contribution = excluded.keyword_contribution,
+          semantic_contribution = excluded.semantic_contribution,
           details_json = excluded.details_json
       `)
       .run(
@@ -67,6 +73,9 @@ export class TurnProfileStore {
         profile.compressionSavings,
         profile.compressionSavingsSource,
         profile.retrievalCount,
+        profile.retrievalMode ?? "keyword",
+        profile.keywordContribution ?? 0,
+        profile.semanticContribution ?? 0,
         JSON.stringify(details),
       );
   }
@@ -144,6 +153,9 @@ export class TurnProfileStore {
       compressionSavings: row.compression_savings,
       compressionSavingsSource: row.compression_savings_source ?? "estimated",
       retrievalCount: row.retrieval_count,
+      retrievalMode: row.retrieval_mode ?? "keyword",
+      keywordContribution: row.keyword_contribution ?? 0,
+      semanticContribution: row.semantic_contribution ?? 0,
       details: safeJson(row.details_json),
     };
   }
@@ -168,6 +180,9 @@ type TurnProfileRow = {
   compression_savings: number;
   compression_savings_source?: "exact" | "estimated" | "unavailable";
   retrieval_count: number;
+  retrieval_mode?: "keyword" | "embedding" | "hybrid";
+  keyword_contribution?: number;
+  semantic_contribution?: number;
   details_json: string;
 };
 

@@ -1,10 +1,15 @@
 import { cosineSimilarity } from "./EmbeddingProvider.js";
 import { tokenize } from "../shared/text.js";
 import { explainSuppressedMemory, hasStablePreferenceSignal, shouldSuppressMemory } from "../shared/safety.js";
-import { MemoryRecord } from "../types/domain.js";
+import { MemoryRecord, RetrievalMode } from "../types/domain.js";
 
 export class MemoryRanker {
-  rank(query: string, memories: MemoryRecord[], queryEmbedding: number[]): MemoryRecord[] {
+  rank(
+    query: string,
+    memories: MemoryRecord[],
+    queryEmbedding: number[],
+    retrievalMode: RetrievalMode,
+  ): MemoryRecord[] {
     const queryTokens = new Set(tokenize(query));
     const now = Date.now();
 
@@ -13,7 +18,10 @@ export class MemoryRanker {
       .map((memory) => {
         const overlap = memory.topics.filter((topic) => queryTokens.has(topic)).length;
         const entityOverlap = memory.entityKeys.filter((entity) => queryTokens.has(entity.toLowerCase())).length;
-        const vectorScore = Math.max(0, cosineSimilarity(queryEmbedding, memory.embedding ?? []));
+        const vectorScore =
+          retrievalMode !== "keyword"
+            ? Math.max(0, cosineSimilarity(queryEmbedding, memory.embedding ?? []))
+            : 0;
         const ageDays = (now - new Date(memory.createdAt).getTime()) / (1000 * 60 * 60 * 24);
         const freshness = Math.max(0, 1.5 - ageDays * memory.decayRate);
         const ttlFactor = memory.ttlDays ? Math.max(0.15, 1 - ageDays / memory.ttlDays) : 1;
@@ -37,10 +45,11 @@ export class MemoryRanker {
             ? 0.9
             : 0;
         const redundancyPenalty = memory.active === false ? 5 : 0;
+        const semanticContribution = vectorScore * 7;
+        const keywordContribution = overlap * 2.8 + entityOverlap * 1.6;
         const score =
-          vectorScore * 7 +
-          overlap * 2.8 +
-          entityOverlap * 1.6 +
+          semanticContribution +
+          keywordContribution +
           memory.salience * 0.8 +
           importance * 0.45 +
           freshness * 2 +
@@ -56,6 +65,9 @@ export class MemoryRanker {
             score,
             scoreBreakdown: {
               semanticSimilarity: vectorScore,
+              retrievalMode,
+              semanticContribution,
+              keywordContribution,
               salience: memory.salience,
               recency: freshness,
               confidence,
@@ -66,6 +78,7 @@ export class MemoryRanker {
             },
             retrievalReason: buildReason({
               query,
+              retrievalMode,
               vectorScore,
               overlap,
               entityOverlap,
@@ -83,6 +96,7 @@ export class MemoryRanker {
 
 function buildReason(params: {
   query: string;
+  retrievalMode: RetrievalMode;
   vectorScore: number;
   overlap: number;
   entityOverlap: number;
@@ -90,6 +104,7 @@ function buildReason(params: {
   confidence: number;
 }): string {
   const reasons = [
+    params.retrievalMode !== "keyword" ? `${params.retrievalMode} retrieval` : "keyword retrieval",
     params.vectorScore > 0.5 ? "strong semantic match" : params.vectorScore > 0.2 ? "semantic match" : "",
     params.overlap > 0 ? `${params.overlap} topic overlap` : "",
     params.entityOverlap > 0 ? `${params.entityOverlap} entity overlap` : "",

@@ -17,7 +17,7 @@ export class ExportService {
 
   async exportMemory(format: "json" | "jsonl" = this.config.exports.defaultFormat): Promise<ExportReport> {
     const records = await this.container.memoryStore.listActive();
-    return await this.writeExport("memory", records, format);
+    return await this.writeExport("memory", records, format, undefined, summarizeScopes(records));
   }
 
   async exportProfile(format: "json" | "jsonl" = this.config.exports.defaultFormat): Promise<ExportReport> {
@@ -41,6 +41,7 @@ export class ExportService {
     records: unknown[],
     format: "json" | "jsonl",
     sessionId?: string,
+    scopeCounts?: ExportReport["scopeCounts"],
   ): Promise<ExportReport> {
     const exportId = crypto.randomUUID();
     const createdAt = new Date().toISOString();
@@ -65,8 +66,19 @@ export class ExportService {
       outputPath,
       itemCount: records.length,
       sessionId,
+      scopeCounts,
     };
     await writeJsonFile(this.paths.latestExportPath, report);
     return report;
   }
+}
+
+function summarizeScopes(records: Array<{ scope?: string }>): ExportReport["scopeCounts"] {
+  return records.reduce<NonNullable<ExportReport["scopeCounts"]>>((summary, record) => {
+    const scope = record.scope;
+    if (scope === "private" || scope === "workspace" || scope === "shared" || scope === "agent_local") {
+      summary[scope] = (summary[scope] ?? 0) + 1;
+    }
+    return summary;
+  }, {});
 }

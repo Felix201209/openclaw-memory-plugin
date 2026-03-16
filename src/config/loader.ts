@@ -44,11 +44,11 @@ export function resolvePluginConfig(params: {
     databasePath: path.join(storageDir, "memory.sqlite"),
     identity: {
       mode:
-        (readEnv(env, "IDENTITY_MODE")?.trim() as "local" | "reconnect" | "cloud" | undefined) ??
+        (readEnv(env, "IDENTITY_MODE")?.trim() as "local" | "reconnect" | "cloud" | "shared" | undefined) ??
         pluginConfig.identity?.mode ??
         defaultPluginConfig.identity.mode,
       backendType:
-        (readEnv(env, "IDENTITY_BACKEND")?.trim() as "local" | "openai-memory" | "custom" | undefined) ??
+        (readEnv(env, "IDENTITY_BACKEND")?.trim() as "local" | "recall-http" | "custom" | undefined) ??
         pluginConfig.identity?.backendType ??
         defaultPluginConfig.identity.backendType,
       identityKey:
@@ -69,6 +69,9 @@ export function resolvePluginConfig(params: {
       userScope:
         readEnv(env, "USER_SCOPE")?.trim() ||
         pluginConfig.identity?.userScope,
+      sharedScope:
+        readEnv(env, "SHARED_SCOPE")?.trim() ||
+        pluginConfig.identity?.sharedScope,
       verifyOnStartup:
         parseBoolean(readEnv(env, "VERIFY_IDENTITY")) ??
         pluginConfig.identity?.verifyOnStartup ??
@@ -136,6 +139,16 @@ export function resolvePluginConfig(params: {
         parseNumber(readEnv(env, "SESSION_STATE_TTL_DAYS")) ??
         pluginConfig.memory?.sessionStateTtlDays ??
         defaultPluginConfig.memory.sessionStateTtlDays,
+    },
+    retrieval: {
+      mode:
+        (readEnv(env, "RETRIEVAL_MODE")?.trim() as "keyword" | "embedding" | "hybrid" | undefined) ??
+        pluginConfig.retrieval?.mode ??
+        defaultPluginConfig.retrieval.mode,
+      fallbackToKeyword:
+        parseBoolean(readEnv(env, "RETRIEVAL_FALLBACK_TO_KEYWORD")) ??
+        pluginConfig.retrieval?.fallbackToKeyword ??
+        defaultPluginConfig.retrieval.fallbackToKeyword,
     },
     compression: {
       recentTurns:
