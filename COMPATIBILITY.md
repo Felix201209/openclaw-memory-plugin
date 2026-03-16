@@ -54,7 +54,7 @@ This matrix applies to `1.1.0`.
 ## Verified install paths
 
 - source checkout + `openclaw plugins install --link .`
-- installed package + `openclaw plugins install --link ./node_modules/@felix201209/openclaw-recall`
+- installed package + `openclaw plugins install --link ./node_modules/@felixypz/openclaw-recall`
 - generated tarball install into a fresh consumer directory
 - standalone CLI execution from `dist/`
 - standalone CLI execution from installed package bin

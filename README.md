@@ -44,8 +44,8 @@ After installing it, you get:
 ## 3-minute install
 
 ```bash
-npm install @felix201209/openclaw-recall
-openclaw plugins install --link ./node_modules/@felix201209/openclaw-recall
+npm install @felixypz/openclaw-recall
+openclaw plugins install --link ./node_modules/@felixypz/openclaw-recall
 openclaw-recall config init --mode local --write-openclaw
 openclaw plugins info openclaw-recall
 openclaw-recall config validate
