@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { ensureDir, readJsonFile, writeJsonFile } from "../shared/fileStore.js";
 import { fingerprint, tokenize } from "../shared/text.js";
-import { sanitizeIncomingUserText, shouldSuppressMemory } from "../shared/safety.js";
+import { containsSensitiveText, hasStablePreferenceSignal, sanitizeIncomingUserText, shouldSuppressMemory } from "../shared/safety.js";
 import type {
   ChatTurn,
   ImportFileReport,
@@ -70,8 +70,7 @@ export class ImportService {
       notes: [],
       scopeMapping: {
         preference: "private",
-        semantic:
-          this.config.identity.mode === "shared" && this.config.identity.sharedScope ? "shared" : "workspace",
+        semantic: "workspace",
         session_state: "session",
         episodic: "private",
         ...options.scopeMapping,
@@ -133,28 +132,44 @@ export class ImportService {
     const kind = classifyPath(filePath);
     try {
       const { candidates, rejectedByNormalization } = await this.readCandidates(filePath, kind);
-      const filtered = candidates
-        .map((candidate) =>
-          applyImportScopeMapping(
-            assignMemoryScope(candidate, this.config, candidate.sourceSessionId),
-            scopeMapping,
-          ),
-        )
-        .filter((candidate) => !shouldSuppressMemory(candidate));
-      const rejected = rejectedByNormalization + (candidates.length - filtered.length);
+      const normalized = candidates.map((candidate) =>
+        applyImportScopeMapping(
+          assignMemoryScope(candidate, this.config, candidate.sourceSessionId),
+          scopeMapping,
+          kind,
+        ),
+      );
+      const filtered: MemoryRecord[] = [];
+      let rejectedNoise = rejectedByNormalization;
+      let rejectedSensitive = 0;
+      let uncertain = 0;
+      for (const candidate of normalized) {
+        if (containsSensitiveText(`${candidate.summary}\n${candidate.content}`)) {
+          rejectedSensitive += 1;
+          continue;
+        }
+        if (shouldSuppressMemory(candidate)) {
+          rejectedNoise += 1;
+          continue;
+        }
+        if (isUncertainCandidate(candidate)) {
+          uncertain += 1;
+        }
+        filtered.push(candidate);
+      }
       if (mode === "dry-run") {
         const scopeCounts = summarizeScopes(filtered);
         return {
           path: filePath,
           kind,
-          status: filtered.length > 0 ? "imported" : rejected > 0 ? "rejected" : "skipped",
+          status: filtered.length > 0 ? "imported" : rejectedNoise + rejectedSensitive > 0 ? "rejected" : "skipped",
           imported: filtered.length,
           merged: 0,
           superseded: 0,
           skipped: 0,
-          rejected,
-          rejectedSensitive: 0,
-          uncertain: 0,
+          rejected: rejectedNoise,
+          rejectedSensitive,
+          uncertain,
           scopeCounts,
         };
       }
@@ -164,14 +179,14 @@ export class ImportService {
       return {
         path: filePath,
         kind,
-        status: filtered.length > 0 ? "imported" : rejected > 0 ? "rejected" : "skipped",
+        status: filtered.length > 0 ? "imported" : rejectedNoise + rejectedSensitive > 0 ? "rejected" : "skipped",
         imported: result.written + result.superseded,
         merged: result.updated,
         superseded: result.superseded,
         skipped: result.updated,
-        rejected,
-        rejectedSensitive: 0,
-        uncertain: 0,
+        rejected: rejectedNoise,
+        rejectedSensitive,
+        uncertain,
         scopeCounts,
       };
     } catch (error) {
@@ -231,7 +246,11 @@ function summarizeScopes(records: MemoryRecord[]): Partial<Record<MemoryScope, n
 function applyImportScopeMapping(
   memory: MemoryRecord,
   scopeMapping: Record<string, MemoryScope>,
+  sourceKind: ImportFileReport["kind"],
 ): MemoryRecord {
+  if (sourceKind === "artifact") {
+    return memory;
+  }
   const mappedScope = scopeMapping[memory.kind];
   if (!mappedScope || mappedScope === memory.scope) {
     return memory;
@@ -323,7 +342,14 @@ function normalizeMemoryObjects(raw: unknown): { candidates: MemoryRecord[]; rej
       rejectedByNormalization += 1;
       continue;
     }
-    candidates.push(buildMemoryRecord(kind, summary, text, String(record.sourceSessionId ?? "imported-memory")));
+    candidates.push(
+      buildMemoryRecord(kind, summary, text, String(record.sourceSessionId ?? "imported-memory"), {
+        scope: normalizeScope(record.scope),
+        scopeKey: typeof record.scopeKey === "string" ? record.scopeKey : undefined,
+        memoryGroup: typeof record.memoryGroup === "string" ? record.memoryGroup : undefined,
+        sensitive: record.sensitive === true,
+      }),
+    );
   }
   return { candidates, rejectedByNormalization };
 }
@@ -394,6 +420,7 @@ function buildMemoryRecord(
   summary: string,
   content: string,
   sourceSessionId: string,
+  extras: Partial<Pick<MemoryRecord, "scope" | "scopeKey" | "memoryGroup" | "sensitive">> = {},
 ): MemoryRecord {
   const now = new Date().toISOString();
   const normalizedSummary = sanitizeIncomingUserText(summary) || summary.trim();
@@ -414,7 +441,30 @@ function buildMemoryRecord(
     confidence: 0.82,
     importance: kind === "preference" ? 8.8 : 7.1,
     active: true,
+    scope: extras.scope,
+    scopeKey: extras.scopeKey,
+    memoryGroup: extras.memoryGroup,
+    sensitive: extras.sensitive,
     sourceSessionId,
     sourceTurnIds: [sourceSessionId],
   };
+}
+
+function normalizeScope(value: unknown): MemoryScope | undefined {
+  return value === "private" || value === "workspace" || value === "shared" || value === "session"
+    ? value
+    : undefined;
+}
+
+function isUncertainCandidate(memory: MemoryRecord): boolean {
+  if (memory.kind === "episodic") {
+    return true;
+  }
+  if (memory.kind === "session_state" && !/(constraint|decision|question|task|project|goal|下一步|约束|决定)/i.test(`${memory.summary}\n${memory.content}`)) {
+    return true;
+  }
+  if (memory.kind === "semantic" && !hasStablePreferenceSignal(`${memory.summary}\n${memory.content}`) && memory.summary.length < 24) {
+    return true;
+  }
+  return false;
 }

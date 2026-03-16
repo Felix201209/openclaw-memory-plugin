@@ -26,7 +26,10 @@ Expected result:
 
 - session and memory files are scanned
 - noisy files are counted as rejected instead of silently imported
+- sensitive rows are counted in `rejectedSensitive`
+- weak or ambiguous rows surface in `uncertainCandidates`
 - duplicate material is merged instead of duplicated
+- semantic rows default to `workspace`, not `shared`, unless you explicitly map them
 
 ## Cross-session recall demo
 

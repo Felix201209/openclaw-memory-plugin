@@ -210,6 +210,39 @@ test("recall-http backend supports update and delete across reconnect clients", 
   }
 });
 
+test("recall-http backend reports auth failure and unreachable status", async () => {
+  const tempDir = await createTempDir("openclaw-recall-http-auth-");
+  const server = await startRecallHttpBackendServer({
+    dataDir: tempDir,
+    port: 0,
+    apiKey: "correct-token",
+  });
+  try {
+    const address = server.address();
+    assert(address && typeof address === "object");
+    const port = address.port;
+    const config = buildConfig({
+      storageDir: tempDir,
+      databasePath: path.join(tempDir, "memory.sqlite"),
+      identity: {
+        ...defaultPluginConfig.identity,
+        mode: "cloud",
+        backendType: "recall-http",
+        endpoint: `http://127.0.0.1:${port}`,
+        memorySpaceId: "team-space",
+        apiKey: "wrong-token",
+      },
+    });
+    const store = new MemoryStore(new PluginDatabase(config.databasePath), createEmbeddingProvider(config), 0.92, config);
+    const ping = await store.pingBackend();
+    assert.equal(ping.ok, false);
+    assert.match(ping.detail, /401|Unauthorized/i);
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    await cleanupTempDir(tempDir);
+  }
+});
+
 test("hybrid retrieval falls back to keyword when embeddings are unavailable", async () => {
   const tempDir = await createTempDir("openclaw-recall-hybrid-");
   try {

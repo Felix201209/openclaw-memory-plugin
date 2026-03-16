@@ -47,6 +47,18 @@ const assistantNoisePattern =
   /你说得对|抱歉|如果你愿意|你回我一句|我后面默认按这个格式回你|我现在\*\*只说我能确定的偏好|已完成\s*\/\s*未完成\s*\/\s*下一步/i;
 const outputLeakagePattern =
   /(?:^|\n)\s*(?:TASK STATE|RELEVANT MEMORY|COMPRESSED TOOL OUTPUT|OLDER HISTORY SUMMARY|RECENT TURNS|CURRENT USER MESSAGE)\s*(?:\n|$)|<(?:task_state|relevant_memory|compacted_tool_output|older_history_summary|recent_turns)>|(?:score|importance|confidence|why)\s*[:=]/i;
+const sensitivePatterns = [
+  /\bsk-[a-z0-9_-]{12,}\b/i,
+  /\bghp_[a-z0-9]{20,}\b/i,
+  /\bAIza[0-9A-Za-z\-_]{20,}\b/,
+  /\bAKIA[0-9A-Z]{16}\b/,
+  /\bapi[_ -]?key\b/i,
+  /\bsecret\b/i,
+  /\baccess[_ -]?token\b/i,
+  /\brefresh[_ -]?token\b/i,
+  /\bpassword\b/i,
+  /-----BEGIN [A-Z ]+PRIVATE KEY-----/,
+];
 
 function collapse(text: string): string {
   return text.replace(/\r/g, "").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
@@ -194,6 +206,11 @@ export function sanitizeTurnForStorage(turn: ChatTurn, originalPrompt?: string):
 
 export function hasStablePreferenceSignal(text: string): boolean {
   return stablePreferencePattern.test(stripTransportNoise(text));
+}
+
+export function containsSensitiveText(text: string): boolean {
+  const cleaned = collapse(text);
+  return sensitivePatterns.some((pattern) => pattern.test(cleaned));
 }
 
 export function explainSuppressedMemory(text: string): string[] {

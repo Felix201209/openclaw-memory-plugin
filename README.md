@@ -17,6 +17,7 @@ The current `main` branch also includes the first v1.1 backend foundation:
 - backend/operator CLI via `openclaw-recall backend serve`
 - hybrid retrieval foundation with explicit `keyword` / `embedding` / `hybrid` modes
 - `private` / `workspace` / `shared` / `session` scope-aware retrieval rules
+- `semantic` memory now defaults to `workspace`; `shared` remains explicit and opt-in
 
 ## Why OpenClaw users install it
 
@@ -112,6 +113,13 @@ The recommended first-use path is:
 5. verify with `doctor`, `status`, `memory explain`, and `profile inspect`
 
 If you already have prior transcripts or memory files, importing them is a better first proof than a synthetic seed chat.
+
+Import behavior in the current v1.1 line:
+
+- duplicate rows are merged or superseded instead of duplicated
+- `rejectedNoise`, `rejectedSensitive`, and `uncertainCandidates` are tracked separately
+- generic imports do not silently promote semantic memory into `shared`
+- exported plugin artifacts preserve their stored scope metadata
 
 ## Operator CLI
 

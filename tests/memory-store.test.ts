@@ -269,8 +269,8 @@ test("reindex refreshes scope metadata and fingerprints without deleting good me
     const active = await store.listActive();
     assert.equal(result.changed, 1);
     assert.equal(active.length, 1);
-    assert.equal(active[0].scope, "shared");
-    assert.equal(active[0].scopeKey, "shared:team-a");
+    assert.equal(active[0].scope, "workspace");
+    assert.equal(active[0].scopeKey, "workspace:workspace-a");
     assert.notEqual(active[0].fingerprint, "old-fingerprint");
   } finally {
     await cleanupTempDir(tempDir);

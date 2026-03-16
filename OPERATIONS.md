@@ -90,6 +90,7 @@ openclaw-recall import status
 ```
 
 The dry-run path is recommended first. It shows what would be imported, what would be rejected as noise, and what would be merged as duplicates.
+It also separates `rejectedSensitive` and `uncertainCandidates`, so import quality problems are not all collapsed into generic noise.
 
 ## Cleaning noisy memories
 
@@ -155,6 +156,8 @@ This clears stored memories, profiles, and tool compactions for the plugin only.
 2. run `config init --mode reconnect` if you have an identity key
 3. run `import run <path-to-exported-files>`
 4. verify with `doctor` and `status`
+
+If you are using the built-in `recall-http` backend, multiple installs can reconnect to the same `memorySpaceId` as long as the endpoint and identity match.
 
 ### Export debug evidence
 

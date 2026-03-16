@@ -187,7 +187,102 @@ test("export writes recovery files and supports import/export roundtrip", async 
   }
 });
 
-function createTestContainer(openclawHome: string): PluginContainer {
+test("shared scope is opt-in on import but preserved for exported artifacts", async () => {
+  const tempDir = await createTempDir("openclaw-recall-import-scope-");
+  const previousHome = process.env.OPENCLAW_HOME;
+  try {
+    process.env.OPENCLAW_HOME = tempDir;
+    const fixtureRoot = path.join(tempDir, "fixtures");
+    await fs.mkdir(path.join(fixtureRoot, "memories"), { recursive: true });
+    await fs.writeFile(
+      path.join(fixtureRoot, "memories", "semantic.json"),
+      JSON.stringify([
+        {
+          kind: "semantic",
+          summary: "Project context: team roadmap for Recall v1.1.",
+          content: "Project context: team roadmap for Recall v1.1.",
+          scope: "shared",
+          scopeKey: "shared:team-alpha",
+          sourceSessionId: "imported-memory",
+        },
+      ]),
+    );
+
+    const sharedContainer = createTestContainer(tempDir, {
+      identity: { mode: "shared", sharedScope: "team-alpha", workspaceScope: "workspace-a", userScope: "felix" },
+    });
+    const importer = new ImportService(sharedContainer, sharedContainer.config, fixtureRoot);
+    const report = await importer.run();
+    const imported = await sharedContainer.memoryStore.listActive();
+    assert.ok((report.scopeCounts?.workspace ?? 0) >= 1);
+    assert.equal(imported[0].scope, "workspace");
+
+    const exporter = new ExportService(sharedContainer, sharedContainer.config);
+    const exportReport = await exporter.exportMemory("json");
+
+    const artifactHome = path.join(tempDir, "artifact-home");
+    process.env.OPENCLAW_HOME = artifactHome;
+    const artifactContainer = createTestContainer(artifactHome, {
+      identity: { mode: "shared", sharedScope: "team-alpha", workspaceScope: "workspace-a", userScope: "felix" },
+    });
+    const artifactImporter = new ImportService(artifactContainer, artifactContainer.config, path.dirname(exportReport.outputPath));
+    const artifactRun = await artifactImporter.run([exportReport.outputPath]);
+    const restored = await artifactContainer.memoryStore.listActive();
+    assert.ok(artifactRun.imported >= 1);
+    assert.equal(restored[0].scope, "workspace");
+  } finally {
+    if (previousHome === undefined) {
+      delete process.env.OPENCLAW_HOME;
+    } else {
+      process.env.OPENCLAW_HOME = previousHome;
+    }
+    await cleanupTempDir(tempDir);
+  }
+});
+
+test("import rejects sensitive rows and tracks uncertain candidates", async () => {
+  const tempDir = await createTempDir("openclaw-recall-import-sensitive-");
+  const previousHome = process.env.OPENCLAW_HOME;
+  try {
+    process.env.OPENCLAW_HOME = tempDir;
+    const fixtureRoot = path.join(tempDir, "fixtures");
+    await fs.mkdir(path.join(fixtureRoot, "memories"), { recursive: true });
+    await fs.writeFile(
+      path.join(fixtureRoot, "memories", "mixed.json"),
+      JSON.stringify([
+        {
+          kind: "semantic",
+          summary: "api key is sk-test-12345678901234567890",
+          content: "api key is sk-test-12345678901234567890",
+        },
+        {
+          kind: "episodic",
+          summary: "Talked about a rough draft once.",
+          content: "Talked about a rough draft once.",
+        },
+      ]),
+    );
+    const container = createTestContainer(tempDir);
+    const importer = new ImportService(container, container.config, fixtureRoot);
+    const report = await importer.dryRun();
+    assert.ok(report.rejectedSensitive >= 1);
+    assert.ok(report.uncertainCandidates >= 1);
+  } finally {
+    if (previousHome === undefined) {
+      delete process.env.OPENCLAW_HOME;
+    } else {
+      process.env.OPENCLAW_HOME = previousHome;
+    }
+    await cleanupTempDir(tempDir);
+  }
+});
+
+function createTestContainer(
+  openclawHome: string,
+  overrides: {
+    identity?: Partial<ReturnType<typeof resolvePluginConfig>["identity"]>;
+  } = {},
+): PluginContainer {
   return new PluginContainer(
     resolvePluginConfig({
       env: {
@@ -196,7 +291,7 @@ function createTestContainer(openclawHome: string): PluginContainer {
       },
       pluginConfig: {
         storageDir: path.join(openclawHome, ".openclaw", "plugins", "openclaw-recall"),
-        identity: { mode: "local" },
+        identity: { mode: "local", ...overrides.identity },
       },
       openclawHome: path.join(openclawHome, ".openclaw"),
     }),

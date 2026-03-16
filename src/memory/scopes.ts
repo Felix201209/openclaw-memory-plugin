@@ -46,7 +46,7 @@ export function defaultScopeFor(kind: MemoryKind, config: ResolvedPluginConfig):
     return "session";
   }
   if (kind === "semantic") {
-    return config.identity.mode === "shared" && config.identity.sharedScope ? "shared" : "workspace";
+    return "workspace";
   }
   return "private";
 }
