@@ -2,56 +2,50 @@
 
 **Persistent memory, context compression, and profile visibility for OpenClaw.**
 
-OpenClaw Recall is a focused memory infrastructure plugin for OpenClaw. It adds automatic memory write, cross-session recall, prompt compression, tool output compaction, and inspectable profile data **without replacing OpenClaw's runtime or product shell**.
+Current stable release: **`1.3.0`** · npm: **`@felixypz/openclaw-recall`**
 
-Current stable release: **`1.3.0`**
+---
 
-npm package: **`@felixypz/openclaw-recall`**
+## Overview
 
-## Why OpenClaw Recall exists
+OpenClaw Recall is a memory infrastructure plugin for OpenClaw. It solves the problems that emerge once an agent is used across sessions:
 
-OpenClaw Recall is built for the problems that appear once an agent is used over time:
+| Problem | Solution |
+|---|---|
+| User preferences forgotten between sessions | Automatic memory write across 4 memory types |
+| Long transcripts waste prompt budget | Layered context compression with budget enforcement |
+| Large tool payloads replayed into the model | Tool output compaction with saved-token reporting |
+| Memory behavior hard to inspect | `doctor`, `status`, `memory explain`, `profile inspect` |
+| Old noisy rows pollute recall | Write-time and retrieval-time guardrails |
 
-- stable user preferences get forgotten between sessions
-- long transcript history wastes prompt budget
-- large tool payloads get replayed back into the model
-- memory and prompt behavior are hard to inspect when something goes wrong
-- old noisy rows can pollute recall unless memory hygiene is enforced
+**Memory types supported:** `preference` · `semantic` · `episodic` · `session_state`
 
-OpenClaw Recall solves that with:
+---
 
-- automatic memory write for `preference`, `semantic`, `episodic`, and `session_state`
-- query-aware retrieval before prompt build
-- layered context compression with budget enforcement
-- tool output compaction with saved-token reporting
-- inspectable operator surfaces through `doctor`, `status`, `memory explain`, `profile inspect`, and session inspection
-- write-time and retrieval-time guardrails that keep metadata noise, wrapper text, and scaffold fragments out of durable memory
-- clean user-visible answers: internal scaffold, scores, and debug annotations stay in inspect paths only
+## What's New in 1.3.0
 
-## What's new in 1.3.0
+This release focuses on retrieval quality and import fidelity.
 
-`1.3.0` is a memory-first minor release. It strengthens Recall's retrieval composition, long-form import quality, and prompt relevance-per-token without turning Recall into a generic compaction framework:
-
-- retrieval now better mixes:
-  - stable preferences
-  - current project context
-  - active task/session context
-- retrieval gate skips more irrelevant memory work for command-like prompts
-- candidate-pool expansion and MMR-style diversification reduce duplicate preference-heavy recall
-- relation-aware retrieval stitching improves project/task recall after import or restore
-- hybrid retrieval now adds RRF-style fusion so stable preferences, project context, and active task context are more likely to survive together
+**Retrieval improvements**
+- Hybrid retrieval now uses RRF-style fusion so stable preferences, project context, and active task context survive together
+- Candidate-pool expansion and MMR-style diversification reduce duplicate preference-heavy recall
+- Retrieval gate skips irrelevant memory work for command-like prompts
+- Relation-aware stitching improves project/task recall after import or restore
 - `RELEVANT MEMORY` is less duplicate-heavy and more relevance-per-token efficient
-- tool-output compaction preserves more structure:
-  - commands
-  - error stacks
-  - code blocks
-  - semi-structured sections
-- provider-style wrapper payloads are unwrapped before compaction, so compacted tool output reflects useful text instead of JSON shells
-- long-form import now chunks oversized memories and transcript segments so more useful project signal survives later recall
-- import retains more useful signal while continuing to reject noise, sensitive rows, and low-value wrappers
-- new retrieval, compaction, import, and operator benchmarks back the release with stronger evidence
 
-## 3-minute install
+**Compaction improvements**
+- Tool-output compaction preserves commands, error stacks, code blocks, and semi-structured sections
+- Provider-style wrapper payloads are unwrapped before compaction
+
+**Import improvements**
+- Long-form import chunks oversized memories and transcript segments for better signal survival
+- Duplicate rows are merged or superseded instead of duplicated
+- `rejectedNoise`, `rejectedSensitive`, and `uncertainCandidates` tracked separately
+- Generic imports no longer silently promote semantic memory into `shared`
+
+---
+
+## Install
 
 ### From npm
 
@@ -70,8 +64,7 @@ openclaw-recall status
 ```bash
 git clone https://github.com/Felix201209/openclaw-recall.git
 cd openclaw-recall
-npm install
-npm run build
+npm install && npm run build
 openclaw plugins install --link .
 openclaw-recall config init --mode local --write-openclaw
 openclaw plugins info openclaw-recall
@@ -80,41 +73,47 @@ openclaw-recall doctor
 openclaw-recall status
 ```
 
-## Identity modes
+---
 
-OpenClaw Recall currently supports two primary persistent identity paths:
+## Identity Modes
 
-- `local` — durable memory stays on the current OpenClaw home
-- `reconnect` — the same identity key or memory space id reconnects the same logical memory space across machines
-
-Use `local` when you want machine-local durable memory only.
-
-Use `reconnect` when you already have an identity key or memory space id and want to reconnect the same memory space on another machine or a fresh OpenClaw home.
+| Mode | When to use |
+|---|---|
+| `local` | Machine-local durable memory only |
+| `reconnect` | Reconnect the same memory space across machines or a fresh OpenClaw home |
 
 ```bash
+# Local
 openclaw-recall config init --mode local
+
+# Reconnect
 openclaw-recall config init --mode reconnect --identity-key recall_xxx --memory-space space_xxx
+
 openclaw-recall config validate
 ```
 
-Important: identity keys are secrets. Store them in a password manager or another secure secret store.
+> **Security:** Identity keys are secrets. Store them in a password manager.
 
-## 5-minute value check
+---
 
-1. Tell OpenClaw:
+## Quick Value Check (5 minutes)
 
-   `Remember that I like you to call me Felix.`
+**1. Write a preference**
+```
+Remember that I like you to call me Felix.
+```
 
-2. Start a new session and ask:
+**2. Verify recall in a new session**
+```
+Did you remember my preferences?
+```
 
-   `Did you remember my preferences?`
+**3. Trigger a tool payload**
+```
+read "README.md"
+```
 
-3. Trigger a tool payload:
-
-   `read "README.md"`
-
-4. Inspect what happened:
-
+**4. Inspect results**
 ```bash
 openclaw-recall memory list
 openclaw-recall memory explain "Did you remember my preferences?"
@@ -122,181 +121,151 @@ openclaw-recall profile list
 openclaw-recall session inspect <sessionId>
 ```
 
-Success looks like:
+**Success looks like:**
+- Memory rows mentioning `Felix`, `English`, or `Concise`
+- Recall works without replaying the earlier transcript
+- Tool results show `savedTokens > 0`
+- Profile rows show compression evidence
 
-- memory rows mentioning `Felix`, `English`, or `Concise`
-- recall works without replaying the earlier transcript
-- tool results show `savedTokens > 0`
-- profile rows show prompt/token-source quality and compression evidence
+See [EXAMPLES.md](EXAMPLES.md) for a full copyable walkthrough.
 
-See [EXAMPLES.md](/Users/felix/Documents/openclaw-memory-plugin/EXAMPLES.md) for a copyable walkthrough.
+---
 
-## Recommended first-use workflow
+## Recommended First-Use Workflow
 
-The recommended first-use path is:
+1. Install the plugin
+2. Initialize config (`local` or `reconnect`)
+3. `openclaw-recall import dry-run`
+4. `openclaw-recall import run`
+5. Verify with `doctor` · `status` · `memory explain` · `profile inspect`
 
-1. install the plugin
-2. initialize config for `local` or `reconnect`
-3. run `openclaw-recall import dry-run`
-4. run `openclaw-recall import run`
-5. verify with:
-   - `doctor`
-   - `status`
-   - `memory explain`
-   - `profile inspect`
+If you already have transcripts or memory files, importing them is the fastest proof path.
 
-If you already have transcripts or memory files, importing them is usually a better first proof than a synthetic seed chat.
+---
 
-Import behavior in `1.3.0`:
-
-- duplicate rows are merged or superseded instead of duplicated
-- `rejectedNoise`, `rejectedSensitive`, and `uncertainCandidates` are tracked separately
-- generic imports do not silently promote semantic memory into `shared`
-- exported plugin artifacts preserve their stored scope metadata
-
-## Operator CLI
+## Operator CLI Reference
 
 ```bash
+# Health
 openclaw-recall doctor
 openclaw-recall status
+
+# Config
 openclaw-recall config show
 openclaw-recall config validate
 openclaw-recall config init
 
+# Import / Export
 openclaw-recall import dry-run
 openclaw-recall import run
 openclaw-recall import status
-
 openclaw-recall export memory
 openclaw-recall export profile
 openclaw-recall export session --session <sessionId>
 
-openclaw-recall backend serve
-
+# Memory
 openclaw-recall memory list
 openclaw-recall memory inspect <id>
 openclaw-recall memory search "<query>"
 openclaw-recall memory explain "<query>"
-openclaw-recall memory prune-noise --dry-run
-openclaw-recall memory prune-noise
-openclaw-recall memory reindex --dry-run
-openclaw-recall memory reindex
-openclaw-recall memory compact --dry-run
-openclaw-recall memory compact
+openclaw-recall memory prune-noise [--dry-run]
+openclaw-recall memory reindex [--dry-run]
+openclaw-recall memory compact [--dry-run]
 
+# Profile & Session
 openclaw-recall profile list
 openclaw-recall profile inspect <runId>
-
 openclaw-recall session list
 openclaw-recall session inspect <sessionId>
+
+# Backend
+openclaw-recall backend serve
 ```
 
-## Inspect routes
+---
 
-OpenClaw Recall exposes a small inspection surface inside OpenClaw:
+## Inspect Routes
 
-- `/plugins/openclaw-recall/dashboard`
-- `/plugins/openclaw-recall/status`
-- `/plugins/openclaw-recall/memories`
-- `/plugins/openclaw-recall/profiles`
-- `/plugins/openclaw-recall/sessions`
-- `/plugins/openclaw-recall/sessions/:sessionId`
+Available inside OpenClaw at:
 
-This is a plugin inspection surface, not a replacement UI.
+```
+/plugins/openclaw-recall/dashboard
+/plugins/openclaw-recall/status
+/plugins/openclaw-recall/memories
+/plugins/openclaw-recall/profiles
+/plugins/openclaw-recall/sessions
+/plugins/openclaw-recall/sessions/:sessionId
+```
 
-## Defaults and configuration
+---
 
-The default strategy is designed to work without a long tuning session:
+## Configuration
 
-- local hashed embeddings by default
-- longer TTL for `preference`, shorter TTL for `episodic`
-- automatic memory write enabled by default
-- context budget defaults to `2400`
-- recent-turn window defaults to `6`
-- history summary starts once the turn-count threshold is crossed
-- detailed profiles enabled by default
+### Defaults
 
-### Configuration precedence
+| Setting | Default |
+|---|---|
+| Embeddings | Local hashed |
+| Context budget | `2400` tokens |
+| Recent-turn window | `6` turns |
+| Preference TTL | Long |
+| Episodic TTL | Short |
+| Automatic memory write | Enabled |
+| Detailed profiles | Enabled |
+
+### Precedence
 
 1. `OPENCLAW_RECALL_*` environment variables
 2. `plugins.entries.openclaw-recall.config`
-3. built-in defaults
+3. Built-in defaults
 
-Legacy `OPENCLAW_MEMORY_PLUGIN_*` variables are still accepted as compatibility aliases during the rename transition.
+Legacy `OPENCLAW_MEMORY_PLUGIN_*` variables are accepted as compatibility aliases during the rename transition.
 
-### Important identity-related variables
+### Identity Variables
 
-- `OPENCLAW_RECALL_IDENTITY_MODE`
-- `OPENCLAW_RECALL_IDENTITY_KEY`
-- `OPENCLAW_RECALL_MEMORY_SPACE_ID`
-- `OPENCLAW_RECALL_IDENTITY_API_KEY`
-- `OPENCLAW_RECALL_IDENTITY_ENDPOINT`
-- `OPENCLAW_RECALL_EXPORT_DIRECTORY`
+```
+OPENCLAW_RECALL_IDENTITY_MODE
+OPENCLAW_RECALL_IDENTITY_KEY
+OPENCLAW_RECALL_MEMORY_SPACE_ID
+OPENCLAW_RECALL_IDENTITY_API_KEY
+OPENCLAW_RECALL_IDENTITY_ENDPOINT
+OPENCLAW_RECALL_EXPORT_DIRECTORY
+```
 
-## Memory quality guardrails
+---
 
-OpenClaw Recall treats memory quality as a first-class runtime concern.
+## Memory Quality Guardrails
 
-Write-time filters reject:
+### Write-time filters reject:
+- Sender metadata, cron/heartbeat records, control-plane labels
+- Wrapper text, debug annotations, scaffold fragments
+- Low-value emotion-only lines
 
-- sender metadata
-- cron / heartbeat records
-- control-plane labels
-- wrapper text
-- debug annotations
-- scaffold fragments
-- low-value emotion-only lines
+### Retrieval-time suppression prevents:
+- Old noisy rows dominating recall
+- Stale or superseded rows crowding out current memory
+- Internal wrapper/debug text leaking into normal answers
 
-Retrieval-time suppression prevents:
+### Stable preference extraction favors:
+`偏直接` · `偏执行导向` · `偏中文` · `偏简洁` · structured reporting preferences
 
-- old noisy rows from dominating recall
-- stale or superseded rows from crowding out current useful memory
-- internal wrapper/debug text from leaking back into normal answers
-
-Stable preference extraction favors:
-
-- `偏直接`
-- `偏执行导向`
-- `偏中文`
-- `偏简洁`
-- structured reporting preferences
-
-Conflict handling supports:
-
-- stable preference supersession
-- common fact updates
-- reduction of long-term recall pollution from stale rows
-
-If you already have old noisy rows, use:
-
+### Memory hygiene commands:
 ```bash
 openclaw-recall memory prune-noise --dry-run
 openclaw-recall memory prune-noise
-openclaw-recall memory reindex --dry-run
-openclaw-recall memory compact --dry-run
+openclaw-recall memory reindex
+openclaw-recall memory compact
 ```
 
-`memory explain`, `memory inspect`, `doctor`, and `status` keep the debug path available without putting those internals in the normal chat response.
+### What `status` reports:
+`noisyActiveMemoryCount` · `lastPrune` · `lastReindex` · `lastCompact` · `hygiene` · `recentImportStats` · `lastExportPath`
 
-`status` reports:
+### What `memory explain` exposes:
+`retrievalMode` · selected rows with `finalScore` · `keywordContribution` · `semanticContribution` · suppressed noisy rows with suppression reasons
 
-- `noisyActiveMemoryCount`
-- `lastPrune`
-- `lastReindex`
-- `lastCompact`
-- `hygiene`
-- `recentImportStats`
-- `lastExportPath`
+Debug data stays in inspect paths only — normal chat replies remain clean.
 
-`memory explain` exposes:
-
-- `retrievalMode`
-- selected rows with `finalScore`
-- `keywordContribution`
-- `semanticContribution`
-- suppressed noisy rows and suppression reasons
-
-That data stays in inspect/debug paths only. Normal chat replies remain clean.
+---
 
 ## Compatibility
 
@@ -304,31 +273,35 @@ Verified for `1.3.0`:
 
 - Node.js `24.10.0` and `24.12.0`
 - OpenClaw `2026.3.13`
-- OpenAI Responses runtime path for exact prompt-token accounting
-- source-link install and tarball install flows
+- OpenAI Responses runtime (exact prompt-token accounting)
+- Source-link and tarball install flows
 
-Full matrix: [COMPATIBILITY.md](/Users/felix/Documents/openclaw-memory-plugin/COMPATIBILITY.md)
+See [COMPATIBILITY.md](COMPATIBILITY.md) for the full matrix.
 
-## Metric accuracy
+---
 
-OpenClaw Recall does not pretend every number is exact.
+## Metric Accuracy
 
-- `promptTokensSource=exact` when provider usage metadata is available
-- `promptTokensSource=estimated` when it is not
-- `compressionSavingsSource=estimated` and `toolTokensSavedSource=estimated` when savings come from heuristic comparisons
+| Metric | Source |
+|---|---|
+| `promptTokensSource` | `exact` when provider usage metadata is available; `estimated` otherwise |
+| `compressionSavingsSource` | `estimated` (heuristic comparison) |
+| `toolTokensSavedSource` | `estimated` (heuristic comparison) |
 
-## Known limitations
+---
 
-- compression savings and tool-token savings are still partly estimated
-- provider smoke coverage is strongest on the OpenAI Responses path
-- OpenClaw plugin CLI exposure through `openclaw <subcommand>` is still upstream-limited; use `openclaw-recall`
-- OpenClaw may emit `plugins.allow is empty` warning noise in some install/info flows
-- memory conflict resolution is still rule-based, even though common stable preference changes now supersede older rows
-- reconnect and cloud-backed continuity in `1.3.0` use the built-in `recall-http` backend; generic external remote backends are not release-verified
+## Known Limitations
 
-These are known release limitations, not blockers for normal use.
+- Compression and tool-token savings are partly estimated
+- Provider smoke coverage is strongest on the OpenAI Responses path
+- `openclaw <subcommand>` CLI exposure is upstream-limited; use `openclaw-recall` directly
+- OpenClaw may emit `plugins.allow is empty` warning noise in some install flows
+- Memory conflict resolution is rule-based (stable preference supersession supported)
+- `reconnect` uses the built-in `recall-http` backend; generic external remote backends are not release-verified
 
-## Verification and packaging
+---
+
+## Build & Verification
 
 ```bash
 npm run check
@@ -342,18 +315,18 @@ npm run verify
 npm run release:build
 ```
 
-This README describes the `1.3.0` release line. See [COMPATIBILITY.md](/Users/felix/Documents/openclaw-memory-plugin/COMPATIBILITY.md) for exact verified, supported, and partial coverage.
+---
 
 ## Documentation
 
-- [QUICKSTART.md](/Users/felix/Documents/openclaw-memory-plugin/QUICKSTART.md)
-- [OPENCLAW-INTEGRATION.md](/Users/felix/Documents/openclaw-memory-plugin/OPENCLAW-INTEGRATION.md)
-- [COMPATIBILITY.md](/Users/felix/Documents/openclaw-memory-plugin/COMPATIBILITY.md)
-- [ARCHITECTURE.md](/Users/felix/Documents/openclaw-memory-plugin/ARCHITECTURE.md)
-- [OPERATIONS.md](/Users/felix/Documents/openclaw-memory-plugin/OPERATIONS.md)
-- [TROUBLESHOOTING.md](/Users/felix/Documents/openclaw-memory-plugin/TROUBLESHOOTING.md)
-- [EXAMPLES.md](/Users/felix/Documents/openclaw-memory-plugin/EXAMPLES.md)
-- [RELEASE_NOTES.md](/Users/felix/Documents/openclaw-memory-plugin/RELEASE_NOTES.md)
-- [CHANGELOG.md](/Users/felix/Documents/openclaw-memory-plugin/CHANGELOG.md)
-- [NOTICE](/Users/felix/Documents/openclaw-memory-plugin/NOTICE)
-- [THIRD_PARTY_NOTICES.md](/Users/felix/Documents/openclaw-memory-plugin/THIRD_PARTY_NOTICES.md)
+| File | Contents |
+|---|---|
+| [QUICKSTART.md](QUICKSTART.md) | Fast path from install to first recall |
+| [OPENCLAW-INTEGRATION.md](OPENCLAW-INTEGRATION.md) | Plugin integration details |
+| [COMPATIBILITY.md](COMPATIBILITY.md) | Verified, supported, and partial coverage matrix |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Internal design and component overview |
+| [OPERATIONS.md](OPERATIONS.md) | Production operation guide |
+| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Common issues and fixes |
+| [EXAMPLES.md](EXAMPLES.md) | Copyable walkthroughs |
+| [RELEASE_NOTES.md](RELEASE_NOTES.md) | Release-level summaries |
+| [CHANGELOG.md](CHANGELOG.md) | Full change history |
