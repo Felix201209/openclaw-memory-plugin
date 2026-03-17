@@ -1,6 +1,6 @@
-# OpenClaw Recall
+# 🦞OpenClaw Recall🦞
 
-**Persistent memory, context compression, and profile visibility for OpenClaw.**
+**Persistent memory, context compression, and profile visibility for OpenClaw.🦞**
 
 <p align="center">
   <img
