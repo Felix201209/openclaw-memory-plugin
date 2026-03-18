@@ -13,7 +13,7 @@
 
 **Other Language:** [简体中文](https://github.com/Felix201209/openclaw-recall/blob/main/zh-cn.md)
 
-Current stable release: **`1.3.0`** · npm: **`@felixypz/openclaw-recall`**
+Current stable release: **`1.3.2`** · npm: **`@felixypz/openclaw-recall`**
 
 ---
 
@@ -33,9 +33,15 @@ OpenClaw Recall is a memory infrastructure plugin for OpenClaw. It solves the pr
 
 ---
 
-## What's New in 1.3.1
+## What's New in 1.3.2
 
-**Latest (v1.3.1):**
+**Latest (v1.3.2):**
+- standardized memory fingerprint and embedding-text generation across extraction, hygiene, and storage backends
+- improved retrieval resilience with runtime embedding fallback logging, read-only explain behavior, and capped oversized keyword candidate pools
+- strengthened preference extraction and tokenization for CJK and question-form preference requests without single-character overmatching
+- upgraded the inspect dashboard into a richer notes explorer and tightened CLI test portability, including Windows `tsx.cmd` resolution
+
+**Previous (v1.3.1):**
 - Improved `.gitignore` to exclude build artifacts
 - Added v1.4 semantic supersede design document
 - Documentation updates and refinements

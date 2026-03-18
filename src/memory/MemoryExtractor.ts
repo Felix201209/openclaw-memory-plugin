@@ -132,7 +132,7 @@ export class MemoryExtractor {
       });
     }
 
-    if (turn.role === "user" && isQuestion) {
+    if (turn.role === "user" && isQuestion && !preferenceRequest) {
       const question = sentenceFromText(text);
       statePatch.openQuestions = uniqueStrings([question]);
       candidates.push({

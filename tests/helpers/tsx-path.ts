@@ -1,11 +1,17 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 
-export function resolveTsxCommand(repoRoot: string): {
+export function resolveTsxCommand(repoRoot: string, platform = process.platform): {
   command: string;
   argsPrefix: string[];
 } {
   const tsxBin = path.join(repoRoot, "node_modules", ".bin", "tsx");
+  if (platform === "win32" && existsSync(`${tsxBin}.cmd`)) {
+    return {
+      command: `${tsxBin}.cmd`,
+      argsPrefix: [],
+    };
+  }
   if (existsSync(tsxBin)) {
     return {
       command: tsxBin,

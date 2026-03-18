@@ -320,16 +320,71 @@ test("hybrid retrieval falls back to keyword when embedding requests fail at run
         topics: ["concise", "terminal", "answers"],
       }),
     ]);
-    const retriever = new MemoryRetriever(store, new MemoryRanker(), throwingEmbeddingProvider(), 4, config);
+    const warnings: string[] = [];
+    const retriever = new MemoryRetriever(
+      store,
+      new MemoryRanker(),
+      throwingEmbeddingProvider(),
+      4,
+      config,
+      { warn: (message) => warnings.push(message) },
+    );
     const result = await retriever.retrieveWithContext("concise terminal answers", 4, {
       sessionId: "s1",
       touch: false,
     });
     assert.equal(result.mode, "keyword");
     assert.equal(result.memories.length, 1);
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0], /embedding network failed/);
   } finally {
     await cleanupTempDir(tempDir);
   }
+});
+
+test("keyword retrieval caps oversized candidate sets before ranking", async () => {
+  const config = buildConfig({
+    retrieval: {
+      mode: "keyword",
+      fallbackToKeyword: true,
+    },
+  });
+  const candidates = Array.from({ length: 64 }, (_, index) =>
+    buildMemory(`Task note ${index}`, {
+      id: `memory-${index}`,
+      topics: ["task", String(index)],
+    }),
+  );
+  const seenCandidateCounts: number[] = [];
+  const store = {
+    async search(): Promise<MemoryRecord[]> {
+      return candidates;
+    },
+    async listBootCandidates(): Promise<MemoryRecord[]> {
+      return [];
+    },
+    async touch(): Promise<void> {
+      return;
+    },
+  } as unknown as MemoryStore;
+  const ranker = {
+    rank(_query: string, memories: MemoryRecord[]): MemoryRecord[] {
+      seenCandidateCounts.push(memories.length);
+      return memories;
+    },
+  } as unknown as MemoryRanker;
+  const retriever = new MemoryRetriever(
+    store,
+    ranker,
+    createEmbeddingProvider(config),
+    4,
+    config,
+  );
+
+  const result = await retriever.retrieveWithContext("task", 4, { touch: false });
+
+  assert.deepEqual(seenCandidateCounts, [32]);
+  assert.equal(result.memories.length, 4);
 });
 
 test("hybrid retrieval falls back to keyword when embeddings are unavailable", async () => {

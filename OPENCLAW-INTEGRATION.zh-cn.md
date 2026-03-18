@@ -50,7 +50,7 @@ openclaw-recall doctor
 
 ## 跨机器连续性（reconnect 模式）
 
-`reconnect` 模式使用内置的 `recall-http` 后端。通用外部远程后端在 `1.3.0` 中未经验证。
+`reconnect` 模式使用内置的 `recall-http` 后端。通用外部远程后端在 `1.3.2` 中未经验证。
 
 跨机器迁移步骤：
 1. 从原机器导出 identity key

@@ -6,7 +6,7 @@
 
 ## 已知限制
 
-以下为 `1.3.0` 的已知发布限制，不影响正常使用。
+以下为 `1.3.2` 的已知发布限制，不影响正常使用。
 
 - 压缩节省量和工具 token 节省量仍部分为估算值
 - Provider 烟雾测试覆盖以 OpenAI Responses 路径为主
@@ -50,7 +50,7 @@ openclaw-recall memory compact
 
 ### 导入后记忆信号丢失
 
-`1.3.0` 的长文导入会对超长段落分块处理。如果信号仍然丢失：
+`1.3.2` 的长文导入会对超长段落分块处理。如果信号仍然丢失：
 1. `openclaw-recall import status` — 检查 `rejectedNoise` 和 `uncertainCandidates` 数量
 2. 尝试用更小的源文件重新导入
 

@@ -6,7 +6,7 @@ Common issues, known limitations, and how to fix them.
 
 ## Known Limitations
 
-These are known release limitations in `1.3.0`, not blockers for normal use.
+These are known release limitations in `1.3.2`, not blockers for normal use.
 
 - Compression and tool-token savings are partly estimated
 - Provider smoke coverage is strongest on the OpenAI Responses path
@@ -50,7 +50,7 @@ openclaw-recall memory compact
 
 ### Memory not surviving after import
 
-Long-form import in `1.3.0` chunks oversized segments. If signal is still lost:
+Long-form import in `1.3.2` chunks oversized segments. If signal is still lost:
 1. `openclaw-recall import status` — check `rejectedNoise` and `uncertainCandidates` counts
 2. Try re-importing with smaller source files
 

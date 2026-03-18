@@ -101,6 +101,7 @@ export class PluginContainer {
       embeddings,
       config.memory.bootTopK,
       config,
+      logger,
     );
     this.contextCompressor = new ContextCompressor(
       config.compression.recentTurns,

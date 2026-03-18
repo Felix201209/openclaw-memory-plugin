@@ -9,6 +9,10 @@ import { explainSuppression } from "./MemoryRanker.js";
 import { effectiveImportance, explainLifecycleSuppression, isRetrievalEligible, lifecycleState } from "./hygiene.js";
 import { rrfFuse } from "./RrfFusion.js";
 
+type RetrieverLogger = {
+  warn: (message: string) => void;
+};
+
 export class MemoryRetriever {
   constructor(
     private readonly store: MemoryStore,
@@ -16,6 +20,7 @@ export class MemoryRetriever {
     private readonly embeddings: EmbeddingProvider,
     private readonly bootTopK: number,
     private readonly config: ResolvedPluginConfig,
+    private readonly logger: RetrieverLogger = console,
   ) {}
 
   async retrieve(
@@ -39,6 +44,7 @@ export class MemoryRetriever {
   }> {
     const cleanQuery = sanitizeIncomingUserText(query);
     let usedMode = this.resolveRetrievalMode();
+    const candidatePoolSize = Math.max(limit * 4, this.bootTopK * 2, 8);
     let memories = (await this.selectCandidates(cleanQuery, usedMode)).filter((memory) =>
       isMemoryVisible(memory, this.config, options.sessionId),
     );
@@ -46,17 +52,22 @@ export class MemoryRetriever {
     if (usedMode !== "keyword") {
       try {
         queryEmbedding = await this.embeddings.embed(cleanQuery);
-      } catch {
+      } catch (error) {
         if (!this.config.retrieval.fallbackToKeyword) {
-          throw new Error("Embedding retrieval failed and keyword fallback is disabled.");
+          throw new Error("Embedding retrieval failed and keyword fallback is disabled.", {
+            cause: error instanceof Error ? error : undefined,
+          });
         }
+        this.logger.warn(
+          `[MemoryRetriever] embedding failed, falling back to keyword: ${formatErrorDetail(error)}`,
+        );
         usedMode = "keyword";
         memories = (await this.store.search(cleanQuery)).filter((memory) =>
           isMemoryVisible(memory, this.config, options.sessionId),
         );
       }
     }
-    const candidatePoolSize = Math.max(limit * 4, this.bootTopK * 2, 8);
+    memories = this.limitCandidateSet(memories, usedMode, candidatePoolSize);
     const ranked = this.rankCandidates(cleanQuery, memories, queryEmbedding, usedMode, candidatePoolSize);
     const boot = options.sessionId
       ? await this.store.listBootCandidates(
@@ -189,6 +200,21 @@ export class MemoryRetriever {
       return await this.store.search(query);
     }
     return await this.store.listRetrievable();
+  }
+
+  private limitCandidateSet(
+    memories: MemoryRecord[],
+    mode: RetrievalMode,
+    candidatePoolSize: number,
+  ): MemoryRecord[] {
+    if (mode !== "keyword") {
+      return memories;
+    }
+    const maxCandidates = candidatePoolSize * 2;
+    if (memories.length <= maxCandidates) {
+      return memories;
+    }
+    return memories.slice(0, maxCandidates);
   }
 
   private mergeCandidates(query: string, ranked: MemoryRecord[], boot: MemoryRecord[]): MemoryRecord[] {
@@ -419,6 +445,13 @@ export class MemoryRetriever {
         : 0;
     return Math.max(topicOverlap, entityOverlap) + sharedScope + complementaryKinds + taskProjectPair + preferenceProjectPair;
   }
+}
+
+function formatErrorDetail(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
 }
 
 function overlapRatio(left: Set<string>, right: Set<string>): number {

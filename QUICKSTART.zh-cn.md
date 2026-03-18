@@ -65,7 +65,7 @@ openclaw-recall config validate
 
 如果你已经有历史对话记录或记忆文件，直接导入比从头演示更快看到效果。
 
-`1.3.0` 导入行为说明：
+`1.3.2` 导入行为说明：
 - 重复行合并或覆盖，不再重复写入
 - `rejectedNoise`、`rejectedSensitive`、`uncertainCandidates` 分别跟踪统计
 - 普通导入不再把语义记忆静默晋升为 `shared` 类型

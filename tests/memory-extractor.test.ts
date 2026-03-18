@@ -34,6 +34,7 @@ test("extracts question-form preference requests as durable memory", () => {
   const result = extractor().extract(turn("之后可以用中文回答并且尽量简洁一点吗？"));
   assert.ok(result.memories.some((memory) => /Chinese responses/i.test(memory.summary)));
   assert.ok(result.memories.some((memory) => /concise/i.test(memory.summary)));
+  assert.deepEqual(result.statePatch.openQuestions, []);
 });
 
 test("rejects noisy metadata and heartbeat wrappers from memory writes", () => {

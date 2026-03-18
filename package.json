@@ -1,6 +1,6 @@
 {
   "name": "@felixypz/openclaw-recall",
-  "version": "1.3.0",
+  "version": "1.3.2",
   "description": "Persistent memory, context compression, and profile visibility for OpenClaw.",
   "type": "module",
   "main": "dist/src/plugin/index.js",

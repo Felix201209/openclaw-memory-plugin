@@ -67,7 +67,10 @@ function isCjkSequence(value: string): boolean {
 
 function cjkNgrams(value: string): string[] {
   const chars = Array.from(value);
-  if (chars.length <= 2) {
+  if (chars.length < 2) {
+    return [];
+  }
+  if (chars.length === 2) {
     return [value];
   }
   const grams: string[] = [];
