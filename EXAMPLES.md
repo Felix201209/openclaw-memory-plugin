@@ -45,7 +45,7 @@ Expected result:
 - relevant memories are retrieved before prompt build
 - the assistant recalls `Felix`, `中文`, and `简洁`
 - when the query asks for both preferences and project context, recall can mix both instead of returning only near-duplicate preference rows
-- in `1.3.0`, mixed recall is more likely to keep active task context in the same answer instead of dropping it behind duplicate preference rows
+- in `1.3.1`, mixed recall is more likely to keep active task context in the same answer instead of dropping it behind duplicate preference rows
 - profile output shows retrieval evidence
 
 Example clean answer shape:
