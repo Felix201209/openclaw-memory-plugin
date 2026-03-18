@@ -13,7 +13,7 @@
   />
 </p>
 
-当前稳定版本：**`1.3.1`** · npm 包名：**`@felixypz/openclaw-recall`**
+当前稳定版本：**`1.3.2`** · npm 包名：**`@felixypz/openclaw-recall`**
 
 ---
 
@@ -33,9 +33,15 @@ OpenClaw Recall 是一个专为 OpenClaw 设计的记忆基础设施插件。它
 
 ---
 
-## 1.3.1 更新了什么
+## 1.3.2 更新了什么
 
-**最新版本 (v1.3.1)：**
+**最新版本 (v1.3.2)：**
+- 统一 extraction、hygiene 和 storage backend 的 memory fingerprint / embedding 文本生成逻辑
+- 改进检索鲁棒性，补充 embedding 失败时的原因日志，并限制超大 keyword 候选集
+- 增强 CJK 与问题式偏好请求的提取效果，同时避免单字 CJK token 过度匹配
+- 升级 inspect dashboard 为更完整的 notes explorer，并补齐 Windows `tsx.cmd` 兼容性
+
+**上一版本 (v1.3.1)：**
 - 改进 `.gitignore`，排除构建产物
 - 添加 v1.4 语义替换设计文档
 - 文档优化和完善

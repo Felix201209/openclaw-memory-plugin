@@ -65,7 +65,7 @@ openclaw-recall config validate
 
 If you already have transcripts or memory files, importing them is the fastest proof path.
 
-Import behavior in `1.3.1`:
+Import behavior in `1.3.2`:
 - Duplicate rows are merged or superseded instead of duplicated
 - `rejectedNoise`, `rejectedSensitive`, and `uncertainCandidates` tracked separately
 - Generic imports no longer silently promote semantic memory into `shared`

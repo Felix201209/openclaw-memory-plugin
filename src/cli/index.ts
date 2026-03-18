@@ -15,7 +15,7 @@ const program = new Command();
 program
   .name("openclaw-recall")
   .description("Inspect and operate OpenClaw Recall")
-  .version("1.3.0");
+  .version("1.3.2");
 
 registerStatusCommands(program);
 registerBackendCommands(program);

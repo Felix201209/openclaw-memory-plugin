@@ -1,10 +1,17 @@
 # Changelog
 
+## 1.3.2
+
+- unified memory fingerprint and embedding-text generation so extraction, hygiene, local storage, and recall-http updates all agree on identity rules
+- improved retrieval reliability with runtime embedding fallback diagnostics, read-only explain calls, and a capped keyword candidate pool before ranking
+- expanded preference extraction and CJK tokenization while avoiding duplicate open-question state for preference-style questions and removing single-character CJK token overmatching
+- rebuilt the inspect dashboard into a searchable notes explorer and added portability coverage for `tsx` resolution on Windows
+
 ## 1.3.1
 
-- improved `.gitignore` to exclude tarball artifacts
-- added v1.4 semantic supersede design document for future development planning
-- minor documentation updates
+- improved `.gitignore` to exclude build artifacts
+- added the v1.4 semantic supersede design document
+- refined release-facing documentation and examples
 
 ## 1.3.0
 

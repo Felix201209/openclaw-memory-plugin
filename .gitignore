@@ -6,4 +6,3 @@ dist
 .openclaw-install-test
 .DS_Store
 *.log
-*.tgz

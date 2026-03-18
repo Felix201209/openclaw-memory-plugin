@@ -2,7 +2,7 @@
 
 ## Release target
 
-This matrix applies to `1.3.1`.
+This matrix applies to `1.3.2`.
 
 ## Verified versions
 
@@ -33,7 +33,7 @@ This matrix applies to `1.3.1`.
 ### Not release-verified
 
 - non-OpenAI runtime provider paths
-  - no claim of full smoke coverage in `1.3.1`
+  - no claim of full smoke coverage in `1.3.2`
 
 ## Verified backend and memory modes
 
@@ -86,7 +86,7 @@ This matrix applies to `1.3.1`.
 - memory conflict resolution is still rule-based
   - workaround: inspect memory rows with `memory explain` and `memory inspect` when tuning behavior
 
-## Evidence used for 1.3.1
+## Evidence used for 1.3.2
 
 - `npm run build`
 - `npm run test:unit`

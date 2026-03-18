@@ -53,7 +53,7 @@ OpenClaw may emit a `plugins.allow is empty` warning in some install or info flo
 
 ## Reconnect and Cloud Continuity
 
-`reconnect` mode uses the built-in `recall-http` backend. Generic external remote backends are not release-verified in `1.3.1`.
+`reconnect` mode uses the built-in `recall-http` backend. Generic external remote backends are not release-verified in `1.3.2`.
 
 For cross-machine continuity:
 1. Export your identity key from the original machine
